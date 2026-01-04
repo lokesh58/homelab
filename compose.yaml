@@ -28,8 +28,8 @@ services:
       - .env.authentik.common
       - .env.authentik.server
     volumes:
-      - ./authentik/media:/media
-      - ./authentik/custom-templates:/templates
+      - authentik-media-data:/media
+      - authentik-custom-templates-data:/templates
     networks:
       - authentik-net
       - authentik-ingress
@@ -47,9 +47,9 @@ services:
       - .env.authentik.server
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./authentik/media:/media
-      - ./authentik/certs:/certs
-      - ./authentik/custom-templates:/templates
+      - authentik-media-data:/media
+      - authentik-custom-templates-data:/templates
+      - authentik-certs-data:/certs
     networks:
       - authentik-net
 
@@ -169,7 +169,7 @@ services:
       - .env.penpot.common
       - .env.penpot.postgres
     volumes:
-      - penpot-postgres-v15-data:/var/lib/postgresql/data
+      - penpot-db-data:/var/lib/postgresql/data
     networks:
       - penpot-net
     healthcheck:
@@ -221,11 +221,14 @@ services:
       - code-runner-net
 
 volumes:
+  authentik-media-data:
+  authentik-custom-templates-data:
+  authentik-certs-data:
   authentik-db-data:
   ollama-data:
   open-webui-data:
   penpot-assets-data:
-  penpot-postgres-v15-data:
+  penpot-db-data:
 
 networks:
   authentik-net:
