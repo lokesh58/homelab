@@ -1,4 +1,7 @@
 services:
+  #################################################################################
+  # Cloudflare
+  #################################################################################
   cloudflared:
     image: cloudflare/cloudflared:latest
     restart: unless-stopped
@@ -6,53 +9,16 @@ services:
     env_file:
       - .env.cloudflared
     networks:
-      - traefik-proxy-net
+      - authentik-ingress
+      - open-webui-ingress
+      - penpot-ingress
+      - code-runner-ingress
 
-  traefik:
-    image: traefik:v3.6
-    restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
-    command:
-      - --entrypoints.web.address=:80
-      - --entrypoints.web.forwardedHeaders.insecure=true
-      - --providers.docker=true
-      - --providers.docker.exposedByDefault=false
-      - --providers.docker.network=traefik-proxy-net
-      - --api.dashboard=true
-      - --api.insecure=false
-      - --log.level=INFO
-      - --accesslog=true
-    networks:
-      - traefik-proxy-net
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.traefik.rule=Host(`traefik.huakesh.dev`)"
-      - "traefik.http.routers.traefik.service=api@internal"
-
-  authentik-postgresql:
-    image: postgres:16-alpine
-    restart: unless-stopped
-    env_file:
-      - .env.authentik.common
-      - .env.authentik.db
-    healthcheck:
-      interval: 30s
-      retries: 5
-      start_period: 20s
-      test:
-        - CMD-SHELL
-        - pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
-      timeout: 5s
-    volumes:
-      - authentik-db-data:/var/lib/postgresql/data
-    networks:
-      - authentik-net
-
+  #################################################################################
+  # Authentik
+  #################################################################################
   authentik-server:
-    image: ghcr.io/goauthentik/server:2025.10.3
+    image: ghcr.io/goauthentik/server:${AUTHENTIK_VERSION}
     restart: unless-stopped
     command: server
     depends_on:
@@ -64,16 +30,12 @@ services:
     volumes:
       - ./authentik/media:/media
       - ./authentik/custom-templates:/templates
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.authentik.rule=Host(`auth.huakesh.dev`)"
-      - "traefik.http.services.authentik.loadbalancer.server.port=9000"
     networks:
       - authentik-net
-      - traefik-proxy-net
+      - authentik-ingress
 
   authentik-worker:
-    image: ghcr.io/goauthentik/server:2025.10.3
+    image: ghcr.io/goauthentik/server:${AUTHENTIK_VERSION}
     restart: unless-stopped
     user: root
     command: worker
@@ -91,6 +53,28 @@ services:
     networks:
       - authentik-net
 
+  authentik-postgresql:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file:
+      - .env.authentik.common
+      - .env.authentik.db
+    volumes:
+      - authentik-db-data:/var/lib/postgresql/data
+    networks:
+      - authentik-net
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 20s
+      test:
+        - CMD-SHELL
+        - pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
+      timeout: 5s
+
+  #################################################################################
+  # Ollama
+  #################################################################################
   ollama:
     image: ollama/ollama:latest
     restart: unless-stopped
@@ -106,20 +90,21 @@ services:
               count: all
               capabilities: [gpu]
 
+  #################################################################################
+  # Open WebUI
+  #################################################################################
   open-webui:
     image: ghcr.io/open-webui/open-webui:cuda
     restart: unless-stopped
-    volumes:
-      - open-webui-data:/app/backend/data
+    depends_on:
+      - ollama
     env_file:
       - .env.open_webui
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.open-webui.rule=Host(`openwebui.huakesh.dev`)"
-      - "traefik.http.services.open-webui.loadbalancer.server.port=8080"
+    volumes:
+      - open-webui-data:/app/backend/data
     networks:
       - ollama-net
-      - traefik-proxy-net
+      - open-webui-ingress
     deploy:
       resources:
         reservations:
@@ -128,44 +113,26 @@ services:
               count: all
               capabilities: [gpu]
 
-  penpot-postgres:
-    image: postgres:15
+  #################################################################################
+  # Penpot
+  #################################################################################
+  penpot-frontend:
+    image: penpotapp/frontend:${PENPOT_VERSION}
     restart: unless-stopped
-    stop_signal: SIGINT
+    depends_on:
+      - penpot-backend
+      - penpot-exporter
     env_file:
-      - .env.penpot.common
-      - .env.penpot.postgres
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
-      interval: 2s
-      timeout: 10s
-      retries: 5
-      start_period: 2s
+      - .env.penpot.flags
+      - .env.penpot.body_size
     volumes:
-      - penpot-postgres-v15-data:/var/lib/postgresql/data
+      - penpot-assets-data:/opt/data/assets
     networks:
       - penpot-net
-
-  penpot-valkey:
-    image: valkey/valkey:8.1
-    restart: unless-stopped
-    env_file:
-      - .env.penpot.valkey
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - valkey-cli ping | grep PONG
-      interval: 1s
-      timeout: 3s
-      retries: 5
-      start_period: 3s
-    networks:
-      - penpot-net
+      - penpot-ingress
 
   penpot-backend:
-    image: penpotapp/backend:2.12.1
+    image: penpotapp/backend:${PENPOT_VERSION}
     restart: unless-stopped
     depends_on:
       penpot-postgres:
@@ -185,7 +152,7 @@ services:
       - penpot-net
 
   penpot-exporter:
-    image: penpotapp/exporter:2.12.1
+    image: penpotapp/exporter:${PENPOT_VERSION}
     restart: unless-stopped
     depends_on:
       penpot-valkey:
@@ -196,38 +163,57 @@ services:
     networks:
       - penpot-net
 
-  penpot-frontend:
-    image: penpotapp/frontend:2.12.1
+  penpot-postgres:
+    image: postgres:15
     restart: unless-stopped
-    depends_on:
-      - penpot-backend
-      - penpot-exporter
+    stop_signal: SIGINT
     env_file:
-      - .env.penpot.flags
-      - .env.penpot.body_size
+      - .env.penpot.common
+      - .env.penpot.postgres
     volumes:
-      - penpot-assets-data:/opt/data/assets
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.penpot.rule=Host(`penpot.huakesh.dev`)"
-      - "traefik.http.services.penpot.loadbalancer.server.port=8080"
+      - penpot-postgres-v15-data:/var/lib/postgresql/data
     networks:
       - penpot-net
-      - traefik-proxy-net
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
+      interval: 2s
+      timeout: 10s
+      retries: 5
+      start_period: 2s
 
+  penpot-valkey:
+    image: valkey/valkey:8.1
+    restart: unless-stopped
+    env_file:
+      - .env.penpot.valkey
+    networks:
+      - penpot-net
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - valkey-cli ping | grep PONG
+      interval: 1s
+      timeout: 3s
+      retries: 5
+      start_period: 3s
+
+  #################################################################################
+  # Code Runner
+  #################################################################################
   code-runner:
     image: huakesh/code-runner:latest
     restart: unless-stopped
     env_file:
       - .env.code_runner
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.code-runner.rule=Host(`code-runner.huakesh.dev`)"
-      - "traefik.http.services.code-runner.loadbalancer.server.port=8080"
     networks:
       - code-runner-net
-      - traefik-proxy-net
+      - code-runner-ingress
 
+  #################################################################################
+  # Lichobi
+  #################################################################################
   lichobi:
     image: huakesh/lichobi:latest
     restart: unless-stopped
@@ -240,13 +226,15 @@ volumes:
   authentik-db-data:
   ollama-data:
   open-webui-data:
-  penpot-postgres-v15-data:
   penpot-assets-data:
+  penpot-postgres-v15-data:
 
 networks:
-  traefik-proxy-net:
-    name: traefik-proxy-net
   authentik-net:
+  authentik-ingress:
   ollama-net:
+  open-webui-ingress:
   penpot-net:
+  penpot-ingress:
   code-runner-net:
+  code-runner-ingress:
