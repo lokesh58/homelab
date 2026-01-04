@@ -96,8 +96,6 @@ services:
   open-webui:
     image: ghcr.io/open-webui/open-webui:cuda
     restart: unless-stopped
-    depends_on:
-      - ollama
     env_file:
       - .env.open_webui
     volumes:
