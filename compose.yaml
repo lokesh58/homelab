@@ -1,0 +1,211 @@
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    env_file:
+      - .env.cloudflared
+    networks:
+      - cloudflared-net
+
+  authentik-postgresql:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file:
+      - .env.authentik.common
+      - .env.authentik.db
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 20s
+      test:
+        - CMD-SHELL
+        - pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
+      timeout: 5s
+    volumes:
+      - authentik-db-data:/var/lib/postgresql/data
+    networks:
+      - authentik-net
+
+  authentik-server:
+    image: ghcr.io/goauthentik/server:2025.10.3
+    restart: unless-stopped
+    command: server
+    depends_on:
+      authentik-postgresql:
+        condition: service_healthy
+    env_file:
+      - .env.authentik.common
+      - .env.authentik.server
+    volumes:
+      - ./authentik/media:/media
+      - ./authentik/custom-templates:/templates
+    networks:
+      - authentik-net
+      - cloudflared-net
+
+  authentik-worker:
+    image: ghcr.io/goauthentik/server:2025.10.3
+    restart: unless-stopped
+    user: root
+    command: worker
+    depends_on:
+      authentik-postgresql:
+        condition: service_healthy
+    env_file:
+      - .env.authentik.common
+      - .env.authentik.server
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./authentik/media:/media
+      - ./authentik/certs:/certs
+      - ./authentik/custom-templates:/templates
+    networks:
+      - authentik-net
+
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    volumes:
+      - ollama-data:/root/.ollama
+    networks:
+      - ollama-net
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:cuda
+    restart: unless-stopped
+    volumes:
+      - open-webui-data:/app/backend/data
+    env_file:
+      - .env.open_webui
+    networks:
+      - ollama-net
+      - cloudflared-net
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  penpot-postgres:
+    image: postgres:15
+    restart: unless-stopped
+    stop_signal: SIGINT
+    env_file:
+      - .env.penpot.common
+      - .env.penpot.postgres
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
+      interval: 2s
+      timeout: 10s
+      retries: 5
+      start_period: 2s
+    volumes:
+      - penpot-postgres-v15-data:/var/lib/postgresql/data
+    networks:
+      - penpot-net
+
+  penpot-valkey:
+    image: valkey/valkey:8.1
+    restart: unless-stopped
+    env_file:
+      - .env.penpot.valkey
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - valkey-cli ping | grep PONG
+      interval: 1s
+      timeout: 3s
+      retries: 5
+      start_period: 3s
+    networks:
+      - penpot-net
+
+  penpot-backend:
+    image: penpotapp/backend:2.12.1
+    restart: unless-stopped
+    depends_on:
+      penpot-postgres:
+        condition: service_healthy
+      penpot-valkey:
+        condition: service_healthy
+    env_file:
+      - .env.penpot.common
+      - .env.penpot.flags
+      - .env.penpot.uri
+      - .env.penpot.body_size
+      - .env.penpot.secret_key
+      - .env.penpot.backend
+    volumes:
+      - penpot-assets-data:/opt/data/assets
+    networks:
+      - penpot-net
+
+  penpot-exporter:
+    image: penpotapp/exporter:2.12.1
+    restart: unless-stopped
+    depends_on:
+      penpot-valkey:
+        condition: service_healthy
+    env_file:
+      - .env.penpot.secret_key
+      - .env.penpot.exporter
+    networks:
+      - penpot-net
+
+  penpot-frontend:
+    image: penpotapp/frontend:2.12.1
+    restart: unless-stopped
+    depends_on:
+      - penpot-backend
+      - penpot-exporter
+    env_file:
+      - .env.penpot.flags
+      - .env.penpot.body_size
+    volumes:
+      - penpot-assets-data:/opt/data/assets
+    networks:
+      - penpot-net
+      - cloudflared-net
+
+  code-runner:
+    image: huakesh/code-runner:latest
+    restart: unless-stopped
+    env_file:
+      - .env.code_runner
+    networks:
+      - code-runner-net
+      - cloudflared-net
+
+  lichobi:
+    image: huakesh/lichobi:latest
+    restart: unless-stopped
+    env_file:
+      - .env.lichobi
+    networks:
+      - code-runner-net
+
+volumes:
+  authentik-db-data:
+  ollama-data:
+  open-webui-data:
+  penpot-postgres-v15-data:
+  penpot-assets-data:
+
+networks:
+  cloudflared-net:
+  authentik-net:
+  ollama-net:
+  penpot-net:
+  code-runner-net:
