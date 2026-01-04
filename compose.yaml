@@ -6,7 +6,31 @@ services:
     env_file:
       - .env.cloudflared
     networks:
-      - cloudflared-net
+      - traefik-proxy-net
+
+  traefik:
+    image: traefik:v3.6
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    command:
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.forwardedHeaders.insecure=true
+      - --providers.docker=true
+      - --providers.docker.exposedByDefault=false
+      - --providers.docker.network=traefik-proxy-net
+      - --api.dashboard=true
+      - --api.insecure=false
+      - --log.level=INFO
+      - --accesslog=true
+    networks:
+      - traefik-proxy-net
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.huakesh.dev`)"
+      - "traefik.http.routers.traefik.service=api@internal"
 
   authentik-postgresql:
     image: postgres:16-alpine
@@ -40,9 +64,13 @@ services:
     volumes:
       - ./authentik/media:/media
       - ./authentik/custom-templates:/templates
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.authentik.rule=Host(`auth.huakesh.dev`)"
+      - "traefik.http.services.authentik.loadbalancer.server.port=9000"
     networks:
       - authentik-net
-      - cloudflared-net
+      - traefik-proxy-net
 
   authentik-worker:
     image: ghcr.io/goauthentik/server:2025.10.3
@@ -85,9 +113,13 @@ services:
       - open-webui-data:/app/backend/data
     env_file:
       - .env.open_webui
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.open-webui.rule=Host(`openwebui.huakesh.dev`)"
+      - "traefik.http.services.open-webui.loadbalancer.server.port=8080"
     networks:
       - ollama-net
-      - cloudflared-net
+      - traefik-proxy-net
     deploy:
       resources:
         reservations:
@@ -175,18 +207,26 @@ services:
       - .env.penpot.body_size
     volumes:
       - penpot-assets-data:/opt/data/assets
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.penpot.rule=Host(`penpot.huakesh.dev`)"
+      - "traefik.http.services.penpot.loadbalancer.server.port=8080"
     networks:
       - penpot-net
-      - cloudflared-net
+      - traefik-proxy-net
 
   code-runner:
     image: huakesh/code-runner:latest
     restart: unless-stopped
     env_file:
       - .env.code_runner
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.code-runner.rule=Host(`code-runner.huakesh.dev`)"
+      - "traefik.http.services.code-runner.loadbalancer.server.port=8080"
     networks:
       - code-runner-net
-      - cloudflared-net
+      - traefik-proxy-net
 
   lichobi:
     image: huakesh/lichobi:latest
@@ -204,7 +244,8 @@ volumes:
   penpot-assets-data:
 
 networks:
-  cloudflared-net:
+  traefik-proxy-net:
+    name: traefik-proxy-net
   authentik-net:
   ollama-net:
   penpot-net:
