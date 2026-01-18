@@ -26,6 +26,9 @@ services:
       - --entrypoints.web.http.redirections.entryPoint.to=websecure
       - --entrypoints.web.http.redirections.entryPoint.scheme=https
       - --entrypoints.web.http.redirections.entrypoint.permanent=true
+      - --entrypoints.websecure.http.tls.certresolver=${CERT_RESOLVER}
+      - --entrypoints.websecure.http.tls.domains[0].main=internal.${DOMAIN}
+      - --entrypoints.websecure.http.tls.domains[0].sans=*.internal.${DOMAIN}
       - --certificatesresolvers.staging-resolver.acme.dnschallenge=true
       - --certificatesresolvers.staging-resolver.acme.dnschallenge.provider=cloudflare
       - --certificatesresolvers.staging-resolver.acme.email=${ACME_EMAIL}
@@ -59,9 +62,6 @@ services:
       - "traefik.http.routers.dashboard.rule=Host(`traefik.internal.${DOMAIN}`)"
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.entrypoints=websecure"
-      - "traefik.http.routers.dashboard.tls.certresolver=${CERT_RESOLVER}"
-      - "traefik.http.routers.dashboard.tls.domains[0].main=internal.${DOMAIN}"
-      - "traefik.http.routers.dashboard.tls.domains[0].sans=*.internal.${DOMAIN}"
       - "traefik.http.routers.dashboard.middlewares=authentik-auth@docker"
 
   #################################################################################
@@ -84,6 +84,12 @@ services:
       - authentik-net
       - authentik-ingress
     labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.authentik.rule=Host(`auth.${DOMAIN}`)"
+      - "traefik.http.routers.authentik.entrypoints=websecure"
+      - "traefik.http.routers.authentik.tls.certresolver=${CERT_RESOLVER}"
+      - "traefik.http.routers.authentik.tls.domains[0].main=auth.${DOMAIN}"
+      - "traefik.http.services.authentik.loadbalancer.server.port=9000"
       - "traefik.http.middlewares.authentik-auth.forwardauth.address=http://authentik-server:9000/outpost.goauthentik.io/auth/internal"
       - "traefik.http.middlewares.authentik-auth.forwardauth.trustForwardHeader=true"
       - "traefik.http.middlewares.authentik-auth.forwardauth.authResponseHeaders=X-authentik-username,X-authentik-groups,X-authentik-email,X-authentik-name,X-authentik-uid,X-authentik-jwt,X-authentik-meta-jwks,X-authentik-meta-outpost,X-authentik-meta-provider,X-authentik-meta-app,X-authentik-meta-version"
@@ -158,6 +164,13 @@ services:
     networks:
       - ollama-net
       - open-webui-ingress
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.open-webui.rule=Host(`openwebui.${DOMAIN}`)"
+      - "traefik.http.routers.open-webui.entrypoints=websecure"
+      - "traefik.http.routers.open-webui.tls.certresolver=${CERT_RESOLVER}"
+      - "traefik.http.routers.open-webui.tls.domains[0].main=openwebui.${DOMAIN}"
+      - "traefik.http.services.open-webui.loadbalancer.server.port=8080"
     deploy:
       resources:
         reservations:
@@ -183,6 +196,13 @@ services:
     networks:
       - penpot-net
       - penpot-ingress
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.penpot.rule=Host(`penpot.${DOMAIN}`)"
+      - "traefik.http.routers.penpot.entrypoints=websecure"
+      - "traefik.http.routers.penpot.tls.certresolver=${CERT_RESOLVER}"
+      - "traefik.http.routers.penpot.tls.domains[0].main=penpot.${DOMAIN}"
+      - "traefik.http.services.penpot.loadbalancer.server.port=8080"
 
   penpot-backend:
     image: penpotapp/backend:${PENPOT_VERSION}
@@ -263,6 +283,13 @@ services:
     networks:
       - code-runner-net
       - code-runner-ingress
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.code-runner.rule=Host(`code-runner.${DOMAIN}`)"
+      - "traefik.http.routers.code-runner.entrypoints=websecure"
+      - "traefik.http.routers.code-runner.tls.certresolver=${CERT_RESOLVER}"
+      - "traefik.http.routers.code-runner.tls.domains[0].main=code-runner.${DOMAIN}"
+      - "traefik.http.services.code-runner.loadbalancer.server.port=8080"
 
   #################################################################################
   # Lichobi
