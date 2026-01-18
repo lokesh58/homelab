@@ -20,6 +20,7 @@ services:
     command:
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
+      - --entrypoints.websecure.http.tls=true
       - --entrypoints.web.http.redirections.entryPoint.to=websecure
       - --entrypoints.web.http.redirections.entryPoint.scheme=https
       - --entrypoints.web.http.redirections.entrypoint.permanent=true
@@ -51,6 +52,7 @@ services:
       - traefik-certificates-data:/letsencrypt
     networks:
       - traefik-net
+      - adguard-home-ingress
       - authentik-ingress
       - open-webui-ingress
       - penpot-ingress
@@ -60,8 +62,29 @@ services:
       - "traefik.http.routers.dashboard.rule=Host(`traefik.internal.${DOMAIN}`)"
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.entrypoints=websecure"
-      - "traefik.http.routers.dashboard.tls=true"
       - "traefik.http.routers.dashboard.middlewares=authentik-auth@docker"
+
+  #################################################################################
+  # AdGuard Home
+  #################################################################################
+  adguard:
+    image: adguard/adguardhome:latest
+    restart: unless-stopped
+    volumes:
+      - adguard-work-data:/opt/adguardhome/work
+      - adguard-conf-data:/opt/adguardhome/conf
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      # - "3000:3000/tcp" # uncomment for initial setup
+    networks:
+      - adguard-home-ingress
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.adguard.rule=Host(`adguard.internal.${DOMAIN}`)"
+      - "traefik.http.routers.adguard.entrypoints=websecure"
+      - "traefik.http.services.adguard.loadbalancer.server.port=80"
+      - "traefik.docker.network=adguard-home-ingress"
 
   #################################################################################
   # Authentik
@@ -306,6 +329,8 @@ services:
 
 volumes:
   traefik-certificates-data:
+  adguard-work-data:
+  adguard-conf-data:
   authentik-media-data:
   authentik-custom-templates-data:
   authentik-certs-data:
@@ -317,6 +342,8 @@ volumes:
 
 networks:
   traefik-net:
+  adguard-home-ingress:
+    name: adguard-home-ingress
   authentik-net:
   authentik-ingress:
     name: authentik-ingress
