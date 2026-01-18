@@ -1,0 +1,62 @@
+version: 1
+metadata:
+  name: Internal Global Proxy Setup
+  labels:
+    type: internal-proxy
+
+entries:
+  # Define the Proxy Provider
+  - model: authentik_providers_proxy.proxyprovider
+    id: provider-internal
+    identifiers:
+      name: Internal Global Proxy
+    attrs:
+      name: Internal Global Proxy
+      # Construct URL using the DOMAIN env var
+      external_host: !Format ["https://internal.%s", [!env "DOMAIN"]]
+      mode: forward_domain
+      # Set the cookie domain to include subdomains
+      cookie_domain: !Format [".internal.%s", [!env "DOMAIN"]]
+      # Use the default authorization flow (Implicit Consent)
+      authorization_flow: !Find [authentik_flows.flow, [slug, "default-provider-authorization-implicit-consent"]]
+      # Use the default authentication flow
+      authentication_flow: !Find [authentik_flows.flow, [slug, "default-authentication-flow"]]
+      access_token_validity: hours=24
+
+  # Define the Application
+  - model: authentik_core.application
+    id: app-internal
+    identifiers:
+      slug: internal
+    attrs:
+      name: Internal Gateway
+      slug: internal
+      provider: !KeyOf provider-internal
+      policy_engine_mode: any
+      group: Internal
+
+  # Ensure the 'internal' group exists
+  - model: authentik_core.group
+    id: group-internal
+    identifiers:
+      name: internal
+    attrs:
+      name: internal
+      is_superuser: false
+
+  # Bind the 'internal' group to the Application
+  # This restricts access ONLY to users in this group.
+  - model: authentik_policies.policybinding
+    identifiers:
+      target: !KeyOf app-internal
+      policy: !KeyOf group-internal
+      order: 0
+
+  # Link the Provider to the Embedded Outpost
+  # WARNING: This appends/updates the managed outpost.
+  - model: authentik_outposts.outpost
+    identifiers:
+      name: "authentik Embedded Outpost"
+    attrs:
+      providers:
+        - !KeyOf provider-internal
