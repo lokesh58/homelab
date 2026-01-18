@@ -17,6 +17,8 @@ services:
   traefik:
     image: traefik:v3.6
     restart: unless-stopped
+    depends_on:
+      - authentik-server
     command:
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
