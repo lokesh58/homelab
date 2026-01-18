@@ -9,10 +9,7 @@ services:
     env_file:
       - .env.cloudflared
     networks:
-      - authentik-ingress
-      - open-webui-ingress
-      - penpot-ingress
-      - code-runner-ingress
+    - traefik-net
 
   #################################################################################
   # Traefik
@@ -53,6 +50,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - traefik-certificates-data:/letsencrypt
     networks:
+      - traefik-net
       - authentik-ingress
       - open-webui-ingress
       - penpot-ingress
@@ -90,6 +88,7 @@ services:
       - "traefik.http.routers.authentik.tls.certresolver=${CERT_RESOLVER}"
       - "traefik.http.routers.authentik.tls.domains[0].main=auth.${DOMAIN}"
       - "traefik.http.services.authentik.loadbalancer.server.port=9000"
+      - "traefik.docker.network=authentik-ingress"
       - "traefik.http.middlewares.authentik-auth.forwardauth.address=http://authentik-server:9000/outpost.goauthentik.io/auth/internal"
       - "traefik.http.middlewares.authentik-auth.forwardauth.trustForwardHeader=true"
       - "traefik.http.middlewares.authentik-auth.forwardauth.authResponseHeaders=X-authentik-username,X-authentik-groups,X-authentik-email,X-authentik-name,X-authentik-uid,X-authentik-jwt,X-authentik-meta-jwks,X-authentik-meta-outpost,X-authentik-meta-provider,X-authentik-meta-app,X-authentik-meta-version"
@@ -171,6 +170,7 @@ services:
       - "traefik.http.routers.open-webui.tls.certresolver=${CERT_RESOLVER}"
       - "traefik.http.routers.open-webui.tls.domains[0].main=openwebui.${DOMAIN}"
       - "traefik.http.services.open-webui.loadbalancer.server.port=8080"
+      - "traefik.docker.network=open-webui-ingress"
     deploy:
       resources:
         reservations:
@@ -203,6 +203,7 @@ services:
       - "traefik.http.routers.penpot.tls.certresolver=${CERT_RESOLVER}"
       - "traefik.http.routers.penpot.tls.domains[0].main=penpot.${DOMAIN}"
       - "traefik.http.services.penpot.loadbalancer.server.port=8080"
+      - "traefik.docker.network=penpot-ingress"
 
   penpot-backend:
     image: penpotapp/backend:${PENPOT_VERSION}
@@ -290,6 +291,7 @@ services:
       - "traefik.http.routers.code-runner.tls.certresolver=${CERT_RESOLVER}"
       - "traefik.http.routers.code-runner.tls.domains[0].main=code-runner.${DOMAIN}"
       - "traefik.http.services.code-runner.loadbalancer.server.port=8080"
+      - "traefik.docker.network=code-runner-ingress"
 
   #################################################################################
   # Lichobi
@@ -314,11 +316,16 @@ volumes:
   penpot-db-data:
 
 networks:
+  traefik-net:
   authentik-net:
   authentik-ingress:
+    name: authentik-ingress
   ollama-net:
   open-webui-ingress:
+    name: open-webui-ingress
   penpot-net:
   penpot-ingress:
+    name: penpot-ingress
   code-runner-net:
   code-runner-ingress:
+    name: code-runner-ingress
