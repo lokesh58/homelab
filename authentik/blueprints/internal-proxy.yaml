@@ -12,11 +12,11 @@ entries:
       name: Internal Global Proxy
     attrs:
       name: Internal Global Proxy
-      # Construct URL using the DOMAIN env var
-      external_host: !Format ["https://internal.%s", [!env "DOMAIN"]]
+      # Use !Env for dynamic domain
+      external_host: !Format ["https://auth.%s", [!Env "DOMAIN"]]
       mode: forward_domain
-      # Set the cookie domain to include subdomains
-      cookie_domain: !Format [".internal.%s", [!env "DOMAIN"]]
+      # Restricted cookie domain for internal apps only
+      cookie_domain: !Format [".internal.%s", [!Env "DOMAIN"]]
       # Use the default authorization flow (Implicit Consent)
       authorization_flow: !Find [authentik_flows.flow, [slug, "default-provider-authorization-implicit-consent"]]
       # Use the default authentication flow
@@ -44,16 +44,17 @@ entries:
       name: internal
       is_superuser: false
 
-  # Bind the 'internal' group to the Application
-  # This restricts access ONLY to users in this group.
+  # Bind the 'internal' group directly to the Application
+  # This grants access to members of this group.
   - model: authentik_policies.policybinding
     identifiers:
       target: !KeyOf app-internal
-      policy: !KeyOf group-internal
+      group: !KeyOf group-internal
       order: 0
+    attrs:
+      enabled: true
 
   # Link the Provider to the Embedded Outpost
-  # WARNING: This appends/updates the managed outpost.
   - model: authentik_outposts.outpost
     identifiers:
       name: "authentik Embedded Outpost"
