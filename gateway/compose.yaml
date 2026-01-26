@@ -1,0 +1,59 @@
+name: homelab_gateway
+
+services:
+  wireguard:
+    image: linuxserver/wireguard:latest
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      # - SYS_MODULE # optional: Neccessary for loading Wireguard kernel module if it's not already loaded.
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+    environment:
+      - PUID=${WIREGUARD_UID}
+      - PGID=${WIREGUARD_GID}
+      - TZ=UTC
+      - SERVERURL=auto
+      - SERVERPORT=51820
+      - PEERS=homelab
+      - INTERNAL_SUBNET=10.13.13.0
+      - ALLOWEDIPS=10.13.13.0/24
+    volumes:
+      - ./wireguard:/config
+      # - /lib/modules:/lib/modules # optional: Path to host kernel module for situations where it's not already loaded.
+    ports:
+      - 51820:51820/udp
+      - 80:80    # used by nginx
+      - 443:443  # used by nginx
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    depends_on:
+      - wireguard
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - nginx_logs:/var/log/nginx
+    network_mode: service:wireguard
+
+  crowdsec:
+    image: crowdsecurity/crowdsec:latest
+    restart: unless-stopped
+    environment:
+      - GID=${CROWDSEC_GID}
+      - COLLECTIONS=crowdsecurity/linux crowdsecurity/sshd crowdsecurity/nginx
+    volumes:
+      - ./crowdsec/acquis.yaml:/etc/crowdsec/acquis.yaml
+      - ./crowdsec/acquis.d:/etc/crowdsec/acquis.d
+      - crowdsec_config:/etc/crowdsec
+      - crowdsec_db:/var/lib/crowdsec/data
+      - nginx_logs:/var/log/nginx:ro
+      - /var/log/auth.log:/var/log/auth.log:ro
+      - /var/log/syslog:/var/log/syslog:ro
+    ports:
+      - 127.0.0.1:8080:8080
+
+volumes:
+  - nginx_logs:
+  - crowdsec_config:
+  - crowdsec_db:

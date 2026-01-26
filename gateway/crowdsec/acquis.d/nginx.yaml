@@ -1,0 +1,5 @@
+# Nginx Stream Logs
+filenames:
+  - /var/log/nginx/stream.*.log
+labels:
+  type: nginx
