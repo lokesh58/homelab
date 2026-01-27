@@ -40,7 +40,6 @@ services:
     image: crowdsecurity/crowdsec:latest
     restart: unless-stopped
     environment:
-      - GID=${CROWDSEC_GID}
       - COLLECTIONS=crowdsecurity/linux crowdsecurity/sshd crowdsecurity/nginx
     volumes:
       - ./crowdsec/acquis.yaml:/etc/crowdsec/acquis.yaml
