@@ -19,7 +19,7 @@ services:
       - INTERNAL_SUBNET=10.13.13.0
       - ALLOWEDIPS=10.13.13.0/24
     volumes:
-      - ./wireguard:/config
+      - wireguard_config:/config
       # - /lib/modules:/lib/modules # optional: Path to host kernel module for situations where it's not already loaded.
     ports:
       - 51820:51820/udp
@@ -53,6 +53,7 @@ services:
       - 127.0.0.1:8080:8080
 
 volumes:
+  - wireguard_config:
   - nginx_logs:
   - crowdsec_config:
   - crowdsec_db:
