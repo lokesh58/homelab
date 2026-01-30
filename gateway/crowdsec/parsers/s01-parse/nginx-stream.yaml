@@ -1,8 +1,7 @@
 name: custom/nginx-stream-logs
 description: "Parse Nginx TCP stream logs"
 filter: "evt.Parsed.program == 'nginx-stream'"
-onsuccess:
-  next_stage: "s02-enrich"
+onsuccess: next_stage
 pattern_syntax:
   NGINX_STREAM: '%{IP:remote_addr} \[%{HTTPDATE:time_local}\] %{WORD:protocol} %{NUMBER:status} %{NUMBER:bytes_sent} %{NUMBER:bytes_received} %{NUMBER:session_time}'
 nodes:
