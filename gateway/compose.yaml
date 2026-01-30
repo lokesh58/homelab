@@ -45,7 +45,6 @@ services:
       - ./crowdsec/acquis.d:/etc/crowdsec/acquis.d
       - crowdsec_config:/etc/crowdsec
       - crowdsec_db:/var/lib/crowdsec/data
-      - nginx_logs:/var/log/nginx:ro
       - /var/log/auth.log:/var/log/auth.log:ro
       - /var/log/syslog:/var/log/syslog:ro
     ports:
