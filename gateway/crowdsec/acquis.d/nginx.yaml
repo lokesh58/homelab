@@ -1,5 +1,13 @@
 # Nginx Stream Logs
 filenames:
-  - /var/log/nginx/stream.*.log
+  - /var/log/nginx/stream.access.log
+labels:
+  type: nginx-stream
+
+---
+
+# Nginx Error Logs
+filenames:
+  - /var/log/nginx/error.log
 labels:
   type: nginx

@@ -39,11 +39,14 @@ services:
   crowdsec:
     image: crowdsecurity/crowdsec:latest
     restart: unless-stopped
+    depends_on:
+      - nginx
     environment:
       - COLLECTIONS=crowdsecurity/linux crowdsecurity/sshd crowdsecurity/nginx
     volumes:
       - ./crowdsec/acquis.yaml:/etc/crowdsec/acquis.yaml
       - ./crowdsec/acquis.d:/etc/crowdsec/acquis.d
+      - ./crowdsec/parsers/s01-parse/nginx-stream.yaml:/etc/crowdsec/parsers/s01-parse/nginx-stream.yaml
       - crowdsec_config:/etc/crowdsec
       - crowdsec_db:/var/lib/crowdsec/data
       - nginx_logs:/var/log/nginx:ro
