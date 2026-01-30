@@ -1,21 +1,46 @@
-services:
-  #################################################################################
-  # Cloudflare
-  #################################################################################
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    restart: unless-stopped
-    command: tunnel --no-autoupdate run
-    env_file:
-      - .env.cloudflared
-    networks:
-    - traefik-net
+name: homelab_server
 
+x-authentik-env: &authentik-env
+  # Database Settings
+  AUTHENTIK_POSTGRESQL__HOST: authentik-postgresql
+  AUTHENTIK_POSTGRESQL__NAME: ${PG_DB}
+  AUTHENTIK_POSTGRESQL__USER: ${PG_USER}
+  AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
+
+  # Secret Key
+  AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY}
+
+  # SMTP Settings
+  AUTHENTIK_EMAIL__HOST: ${SMTP_HOST}
+  AUTHENTIK_EMAIL__PORT: ${SMTP_PORT}
+  AUTHENTIK_EMAIL__USERNAME: ${SMTP_USERNAME}
+  AUTHENTIK_EMAIL__PASSWORD: ${SMTP_PASSWORD}
+  AUTHENTIK_EMAIL__USE_TLS: ${SMTP_USE_TLS}
+  AUTHENTIK_EMAIL__USE_SSL: ${SMTP_USE_SSL}
+  AUTHENTIK_EMAIL__TIMEOUT: 30
+  AUTHENTIK_EMAIL__FROM: Authentik <no-reply@${DOMAIN}>
+
+x-penpot-flags: &penpot-flags
+  PENPOT_FLAGS: enable-smtp enable-login-with-oidc enable-oidc-registration disable-login-with-password disable-registration disable-email-verification
+
+x-penpot-public-uri: &penpot-public-uri
+  PENPOT_PUBLIC_URI: https://penpot.${DOMAIN}
+
+x-penpot-http-body-size: &penpot-http-body-size
+  # Max body size (30MiB); Used for plain requests, should never be greater than multi-part size
+  PENPOT_HTTP_SERVER_MAX_BODY_SIZE: 31457280
+  # Max multipart body size (350MiB)
+  PENPOT_HTTP_SERVER_MAX_MULTIPART_BODY_SIZE: 367001600
+
+x-penpot-secret-key: &penpot-secret-key
+  PENPOT_SECRET_KEY: ${PENPOT_SECRET_KEY}
+
+services:
   #################################################################################
   # Traefik
   #################################################################################
   traefik:
-    image: traefik:v3.6
+    image: traefik:${TRAEFIK_VERSION}
     restart: unless-stopped
     command:
       - --entrypoints.web.address=:80
@@ -24,29 +49,29 @@ services:
       - --entrypoints.web.http.redirections.entryPoint.to=websecure
       - --entrypoints.web.http.redirections.entryPoint.scheme=https
       - --entrypoints.web.http.redirections.entrypoint.permanent=true
-      - --entrypoints.websecure.http.tls.certresolver=${CERT_RESOLVER}
+      - --entrypoints.websecure.http.tls.certresolver=${TRAEFIK_CERT_RESOLVER}
       - --entrypoints.websecure.http.tls.domains[0].main=internal.${DOMAIN}
       - --entrypoints.websecure.http.tls.domains[0].sans=*.internal.${DOMAIN}
-      - --certificatesresolvers.staging-resolver.acme.dnschallenge=true
-      - --certificatesresolvers.staging-resolver.acme.dnschallenge.provider=cloudflare
-      - --certificatesresolvers.staging-resolver.acme.email=${ACME_EMAIL}
-      - --certificatesresolvers.staging-resolver.acme.storage=/letsencrypt/acme.json
-      - --certificatesresolvers.staging-resolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
-      - --certificatesresolvers.prod-resolver.acme.dnschallenge=true
-      - --certificatesresolvers.prod-resolver.acme.dnschallenge.provider=cloudflare
-      - --certificatesresolvers.prod-resolver.acme.email=${ACME_EMAIL}
-      - --certificatesresolvers.prod-resolver.acme.storage=/letsencrypt/acme.json
-      - --certificatesresolvers.prod-resolver.acme.caserver=https://acme-v02.api.letsencrypt.org/directory
+      - --certificatesresolvers.le-staging.acme.dnschallenge=true
+      - --certificatesresolvers.le-staging.acme.dnschallenge.provider=cloudflare
+      - --certificatesresolvers.le-staging.acme.email=${TRAEFIK_LE_EMAIL}
+      - --certificatesresolvers.le-staging.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.le-staging.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
+      - --certificatesresolvers.le.acme.dnschallenge=true
+      - --certificatesresolvers.le.acme.dnschallenge.provider=cloudflare
+      - --certificatesresolvers.le.acme.email=${TRAEFIK_LE_EMAIL}
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.le.acme.caserver=https://acme-v02.api.letsencrypt.org/directory
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
       - --api.dashboard=true
       - --api.insecure=false
       - --log.level=INFO
-    env_file:
-      - .env.traefik
+    environment:
+      CF_DNS_API_TOKEN: ${TRAEFIK_CF_DNS_API_TOKEN}
     ports:
-      - 80:80
-      - 443:443
+      - 80:80/tcp
+      - 443:443/tcp
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - traefik-certificates-data:/letsencrypt
@@ -58,33 +83,33 @@ services:
       - penpot-ingress
       - code-runner-ingress
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.dashboard.rule=Host(`traefik.internal.${DOMAIN}`)"
-      - "traefik.http.routers.dashboard.service=api@internal"
-      - "traefik.http.routers.dashboard.entrypoints=websecure"
-      - "traefik.http.routers.dashboard.middlewares=authentik-auth@docker"
+      - traefik.enable=true
+      - traefik.http.routers.dashboard.rule=Host(`traefik.internal.${DOMAIN}`)
+      - traefik.http.routers.dashboard.service=api@internal
+      - traefik.http.routers.dashboard.entrypoints=websecure
+      - traefik.http.routers.dashboard.middlewares=authentik-auth@docker
 
   #################################################################################
   # AdGuard Home
   #################################################################################
   adguard:
-    image: adguard/adguardhome:latest
+    image: adguard/adguardhome:${ADGUARD_VERSION}
     restart: unless-stopped
+    ports:
+      - 53:53/tcp
+      - 53:53/udp
+      # - 3000:3000/tcp # uncomment for initial setup
     volumes:
       - adguard-work-data:/opt/adguardhome/work
       - adguard-conf-data:/opt/adguardhome/conf
-    ports:
-      - "53:53/tcp"
-      - "53:53/udp"
-      # - "3000:3000/tcp" # uncomment for initial setup
     networks:
       - adguard-home-ingress
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.adguard.rule=Host(`adguard.internal.${DOMAIN}`)"
-      - "traefik.http.routers.adguard.entrypoints=websecure"
-      - "traefik.http.services.adguard.loadbalancer.server.port=80"
-      - "traefik.docker.network=adguard-home-ingress"
+      - traefik.enable=true
+      - traefik.http.routers.adguard.rule=Host(`adguard.home.${DOMAIN}`)
+      - traefik.http.routers.adguard.entrypoints=websecure
+      - traefik.http.services.adguard.loadbalancer.server.port=80
+      - traefik.docker.network=adguard-home-ingress
 
   #################################################################################
   # Authentik
@@ -96,9 +121,8 @@ services:
     depends_on:
       authentik-postgresql:
         condition: service_healthy
-    env_file:
-      - .env.authentik.common
-      - .env.authentik.server
+    environment:
+      <<: [*authentik-env]
     volumes:
       - authentik-media-data:/media
       - authentik-custom-templates-data:/templates
@@ -106,16 +130,16 @@ services:
       - authentik-net
       - authentik-ingress
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.authentik.rule=Host(`auth.${DOMAIN}`)"
-      - "traefik.http.routers.authentik.entrypoints=websecure"
-      - "traefik.http.routers.authentik.tls.certresolver=${CERT_RESOLVER}"
-      - "traefik.http.routers.authentik.tls.domains[0].main=auth.${DOMAIN}"
-      - "traefik.http.services.authentik.loadbalancer.server.port=9000"
-      - "traefik.docker.network=authentik-ingress"
-      - "traefik.http.middlewares.authentik-auth.forwardauth.address=http://authentik-server:9000/outpost.goauthentik.io/auth/traefik"
-      - "traefik.http.middlewares.authentik-auth.forwardauth.trustForwardHeader=true"
-      - "traefik.http.middlewares.authentik-auth.forwardauth.authResponseHeaders=X-authentik-username,X-authentik-groups,X-authentik-entitlements,X-authentik-email,X-authentik-name,X-authentik-uid,X-authentik-jwt,X-authentik-meta-jwks,X-authentik-meta-outpost,X-authentik-meta-provider,X-authentik-meta-app,X-authentik-meta-version"
+      - traefik.enable=true
+      - traefik.http.routers.authentik.rule=Host(`auth.${DOMAIN}`)
+      - traefik.http.routers.authentik.entrypoints=websecure
+      - traefik.http.routers.authentik.tls.certresolver=${TRAEFIK_CERT_RESOLVER}
+      - traefik.http.routers.authentik.tls.domains[0].main=auth.${DOMAIN}
+      - traefik.http.services.authentik.loadbalancer.server.port=9000
+      - traefik.docker.network=authentik-ingress
+      - traefik.http.middlewares.authentik-auth.forwardauth.address=http://authentik-server:9000/outpost.goauthentik.io/auth/traefik
+      - traefik.http.middlewares.authentik-auth.forwardauth.trustForwardHeader=true
+      - traefik.http.middlewares.authentik-auth.forwardauth.authResponseHeaders=X-authentik-username,X-authentik-groups,X-authentik-entitlements,X-authentik-email,X-authentik-name,X-authentik-uid,X-authentik-jwt,X-authentik-meta-jwks,X-authentik-meta-outpost,X-authentik-meta-provider,X-authentik-meta-app,X-authentik-meta-version
 
   authentik-worker:
     image: ghcr.io/goauthentik/server:${AUTHENTIK_VERSION}
@@ -125,9 +149,8 @@ services:
     depends_on:
       authentik-postgresql:
         condition: service_healthy
-    env_file:
-      - .env.authentik.common
-      - .env.authentik.server
+    environment:
+      <<: [*authentik-env]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - authentik-media-data:/media
@@ -139,9 +162,10 @@ services:
   authentik-postgresql:
     image: postgres:16-alpine
     restart: unless-stopped
-    env_file:
-      - .env.authentik.common
-      - .env.authentik.db
+    environment:
+      POSTGRES_DB: ${AUTHENTIK_PG_DB}
+      POSTGRES_USER: ${AUTHENTIK_PG_USER}
+      POSTGRES_PASSWORD: ${AUTHENTIK_PG_PASS}
     volumes:
       - authentik-db-data:/var/lib/postgresql/data
     networks:
@@ -159,7 +183,7 @@ services:
   # Ollama
   #################################################################################
   ollama:
-    image: ollama/ollama:latest
+    image: ollama/ollama:${OLLAMA_VERSION}
     restart: unless-stopped
     volumes:
       - ollama-data:/root/.ollama
@@ -177,23 +201,38 @@ services:
   # Open WebUI
   #################################################################################
   open-webui:
-    image: ghcr.io/open-webui/open-webui:cuda
+    image: ghcr.io/open-webui/open-webui:${VERSION}
     restart: unless-stopped
-    env_file:
-      - .env.open_webui
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+      WEBUI_URL: https://openwebui.${DOMAIN}
+      ENABLE_SIGNUP: false
+      ENABLE_LOGIN_FORM: false
+      ENABLE_PASSWORD_AUTH: false
+      ENABLE_OAUTH_SIGNUP: true
+      OAUTH_PROVIDER_NAME: Authentik
+      OAUTH_CLIENT_ID: ${OPENWEBUI_OAUTH_ID}
+      OAUTH_CLIENT_SECRET: ${OPENWEBUI_OAUTH_SECRET}
+      OPENID_PROVIDER_URL: https://auth.${DOMAIN}/application/o/${OPENWEBUI_OAUTH_SLUG}/.well-known/openid-configuration
+      OPENID_REDIRECT_URI: https://openwebui.${DOMAIN}/oauth/oidc/callback
+      OAUTH_SCOPES: openid email profile open_webui_roles
+      ENABLE_OAUTH_ROLE_MANAGEMENT: true
+      OAUTH_ROLES_CLAIM: open_webui_roles
+      OAUTH_ADMIN_ROLES: open-webui-admins
+      OAUTH_MERGE_ACCOUNTS_BY_EMAIL: true
     volumes:
       - open-webui-data:/app/backend/data
     networks:
       - ollama-net
       - open-webui-ingress
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.open-webui.rule=Host(`openwebui.${DOMAIN}`)"
-      - "traefik.http.routers.open-webui.entrypoints=websecure"
-      - "traefik.http.routers.open-webui.tls.certresolver=${CERT_RESOLVER}"
-      - "traefik.http.routers.open-webui.tls.domains[0].main=openwebui.${DOMAIN}"
-      - "traefik.http.services.open-webui.loadbalancer.server.port=8080"
-      - "traefik.docker.network=open-webui-ingress"
+      - traefik.enable=true
+      - traefik.http.routers.open-webui.rule=Host(`openwebui.${DOMAIN}`)
+      - traefik.http.routers.open-webui.entrypoints=websecure
+      - traefik.http.routers.open-webui.tls.certresolver=${TRAEFIK_CERT_RESOLVER}
+      - traefik.http.routers.open-webui.tls.domains[0].main=openwebui.${DOMAIN}
+      - traefik.http.services.open-webui.loadbalancer.server.port=8080
+      - traefik.docker.network=open-webui-ingress
     deploy:
       resources:
         reservations:
@@ -211,22 +250,21 @@ services:
     depends_on:
       - penpot-backend
       - penpot-exporter
-    env_file:
-      - .env.penpot.flags
-      - .env.penpot.body_size
+    environment:
+      <<: [*penpot-flags, *penpot-http-body-size]
     volumes:
       - penpot-assets-data:/opt/data/assets
     networks:
       - penpot-net
       - penpot-ingress
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.penpot.rule=Host(`penpot.${DOMAIN}`)"
-      - "traefik.http.routers.penpot.entrypoints=websecure"
-      - "traefik.http.routers.penpot.tls.certresolver=${CERT_RESOLVER}"
-      - "traefik.http.routers.penpot.tls.domains[0].main=penpot.${DOMAIN}"
-      - "traefik.http.services.penpot.loadbalancer.server.port=8080"
-      - "traefik.docker.network=penpot-ingress"
+      - traefik.enable=true
+      - traefik.http.routers.penpot.rule=Host(`penpot.${DOMAIN}`)
+      - traefik.http.routers.penpot.entrypoints=websecure
+      - traefik.http.routers.penpot.tls.certresolver=${TRAEFIK_CERT_RESOLVER}
+      - traefik.http.routers.penpot.tls.domains[0].main=penpot.${DOMAIN}
+      - traefik.http.services.penpot.loadbalancer.server.port=8080
+      - traefik.docker.network=penpot-ingress
 
   penpot-backend:
     image: penpotapp/backend:${PENPOT_VERSION}
@@ -236,13 +274,25 @@ services:
         condition: service_healthy
       penpot-valkey:
         condition: service_healthy
-    env_file:
-      - .env.penpot.common
-      - .env.penpot.flags
-      - .env.penpot.uri
-      - .env.penpot.body_size
-      - .env.penpot.secret_key
-      - .env.penpot.backend
+    environment:
+      <<: [*penpot-flags, *penpot-public-uri, *penpot-http-body-size, *penpot-secret-key]
+      PENPOT_DATABASE_URI: postgresql://penpot-postgres/${PENPOT_PG_DB}
+      PENPOT_DATABASE_USERNAME: ${PENPOT_PG_USER}
+      PENPOT_DATABASE_PASSWORD: ${PENPOT_PG_PASS}
+      PENPOT_REDIS_URI: redis://penpot-valkey/0
+      PENPOT_ASSETS_STORAGE_BACKEND: assets-fs
+      PENPOT_STORAGE_ASSETS_FS_DIRECTORY: /opt/data/assets
+      PENPOT_SMTP_DEFAULT_FROM: Penpot <penpot@${DOMAIN}>
+      PENPOT_SMTP_DEFAULT_REPLY_TO: ${ORG_NAME} Support <support@${DOMAIN}>
+      PENPOT_SMTP_HOST: ${SMTP_HOST}
+      PENPOT_SMTP_PORT: ${SMTP_PORT}
+      PENPOT_SMTP_USERNAME: ${SMTP_USERNAME}
+      PENPOT_SMTP_PASSWORD: ${SMTP_PASSWORD}
+      PENPOT_SMTP_TLS: ${SMTP_USE_TLS}
+      PENPOT_SMTP_SSL: ${SMTP_USE_SSL}
+      PENPOT_OIDC_CLIENT_ID: ${PENPOT_OIDC_ID}
+      PENPOT_OIDC_CLIENT_SECRET: ${PENPOT_OIDC_SECRET}
+      PENPOT_OIDC_BASE_URI: https://auth.${DOMAIN}/application/o/${PENPOT_OIDC_SLUG}/
     volumes:
       - penpot-assets-data:/opt/data/assets
     networks:
@@ -254,9 +304,10 @@ services:
     depends_on:
       penpot-valkey:
         condition: service_healthy
-    env_file:
-      - .env.penpot.secret_key
-      - .env.penpot.exporter
+    environment:
+      <<: [*penpot-secret-key]
+      PENPOT_PUBLIC_URI: http://penpot-frontend:8080
+      PENPOT_REDIS_URI: redis://penpot-valkey/0
     networks:
       - penpot-net
 
@@ -264,9 +315,11 @@ services:
     image: postgres:15
     restart: unless-stopped
     stop_signal: SIGINT
-    env_file:
-      - .env.penpot.common
-      - .env.penpot.postgres
+    environment:
+      POSTGRES_INITDB_ARGS: --data-checksums
+      POSTGRES_DB: ${PENPOT_PG_DB}
+      POSTGRES_USER: ${PENPOT_PG_USER}
+      POSTGRES_PASSWORD: ${PENPOT_PG_PASS}
     volumes:
       - penpot-db-data:/var/lib/postgresql/data
     networks:
@@ -283,8 +336,8 @@ services:
   penpot-valkey:
     image: valkey/valkey:8.1
     restart: unless-stopped
-    env_file:
-      - .env.penpot.valkey
+    environment:
+      VALKEY_EXTRA_FLAGS: --maxmemory 128mb --maxmemory-policy volatile-lfu
     networks:
       - penpot-net
     healthcheck:
@@ -300,30 +353,36 @@ services:
   # Code Runner
   #################################################################################
   code-runner:
-    image: huakesh/code-runner:latest
+    image: huakesh/code-runner:${CODERUNNER_VERSION}
     restart: unless-stopped
-    env_file:
-      - .env.code_runner
+    environment:
+      API_TOKEN: ${CODERUNNER_API_TOKEN}
     networks:
       - code-runner-net
       - code-runner-ingress
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.code-runner.rule=Host(`code-runner.${DOMAIN}`)"
-      - "traefik.http.routers.code-runner.entrypoints=websecure"
-      - "traefik.http.routers.code-runner.tls.certresolver=${CERT_RESOLVER}"
-      - "traefik.http.routers.code-runner.tls.domains[0].main=code-runner.${DOMAIN}"
-      - "traefik.http.services.code-runner.loadbalancer.server.port=8080"
-      - "traefik.docker.network=code-runner-ingress"
+      - traefik.enable=true
+      - traefik.http.routers.code-runner.rule=Host(`code-runner.${DOMAIN}`)
+      - traefik.http.routers.code-runner.entrypoints=websecure
+      - traefik.http.routers.code-runner.tls.certresolver=${TRAEFIK_CERT_RESOLVER}
+      - traefik.http.routers.code-runner.tls.domains[0].main=code-runner.${DOMAIN}
+      - traefik.http.services.code-runner.loadbalancer.server.port=8080
+      - traefik.docker.network=code-runner-ingress
 
   #################################################################################
   # Lichobi
   #################################################################################
   lichobi:
-    image: huakesh/lichobi:latest
+    image: huakesh/lichobi:${LICHOBI_VERSION}
     restart: unless-stopped
-    env_file:
-      - .env.lichobi
+    environment:
+      AI_PROVIDER: ${LICHOBI_AI_PROVIDER}
+      AI_API_KEY: ${LICHOBI_AI_API_KEY}
+      CODE_RUNNER_API_BASE_URL: http://code-runner:8080
+      CODE_RUNNER_API_TOKEN: ${CODERUNNER_API_TOKEN}
+      DEFAULT_PREFIX: !
+      DISCORD_BOT_TOKEN: ${LICHOBI_DISCORD_BOT_TOKEN}
+      LOG_LEVEL: info
     networks:
       - code-runner-net
 
