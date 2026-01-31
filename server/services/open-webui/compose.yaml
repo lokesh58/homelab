@@ -1,0 +1,48 @@
+services:
+  open_webui:
+    image: ghcr.io/open-webui/open-webui:${VERSION}
+    restart: unless-stopped
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+      WEBUI_URL: https://openwebui.${DOMAIN}
+      ENABLE_SIGNUP: false
+      ENABLE_LOGIN_FORM: false
+      ENABLE_PASSWORD_AUTH: false
+      ENABLE_OAUTH_SIGNUP: true
+      OAUTH_PROVIDER_NAME: Authentik
+      OAUTH_CLIENT_ID: ${OPENWEBUI_OAUTH_ID}
+      OAUTH_CLIENT_SECRET: ${OPENWEBUI_OAUTH_SECRET}
+      OPENID_PROVIDER_URL: https://auth.${DOMAIN}/application/o/${OPENWEBUI_OAUTH_SLUG}/.well-known/openid-configuration
+      OPENID_REDIRECT_URI: https://openwebui.${DOMAIN}/oauth/oidc/callback
+      OAUTH_SCOPES: openid email profile open_webui_roles
+      ENABLE_OAUTH_ROLE_MANAGEMENT: true
+      OAUTH_ROLES_CLAIM: open_webui_roles
+      OAUTH_ADMIN_ROLES: open-webui-admins
+      OAUTH_MERGE_ACCOUNTS_BY_EMAIL: true
+    volumes:
+      - open_webui_data:/app/backend/data
+    networks:
+      - ollama_ingress
+      - open_webui_ingress
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.open_webui.rule=Host(`openwebui.${DOMAIN}`)
+      - traefik.http.routers.open_webui.entrypoints=websecure
+      - traefik.http.routers.open_webui.tls.certresolver=${TRAEFIK_CERT_RESOLVER}
+      - traefik.http.routers.open_webui.tls.domains[0].main=openwebui.${DOMAIN}
+      - traefik.http.services.open_webui.loadbalancer.server.port=8080
+      - traefik.docker.network=open_webui_ingress
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+volumes:
+  open_webui_data:
+
+networks:
+  open_webui_ingress:
+    name: open_webui_ingress

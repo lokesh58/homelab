@@ -1,0 +1,96 @@
+x-authentik_env: &authentik_env
+  # Database Settings
+  AUTHENTIK_POSTGRESQL__HOST: authentik_postgresql
+  AUTHENTIK_POSTGRESQL__NAME: ${PG_DB}
+  AUTHENTIK_POSTGRESQL__USER: ${PG_USER}
+  AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
+
+  # Secret Key
+  AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY}
+
+  # SMTP Settings
+  AUTHENTIK_EMAIL__HOST: ${SMTP_HOST}
+  AUTHENTIK_EMAIL__PORT: ${SMTP_PORT}
+  AUTHENTIK_EMAIL__USERNAME: ${SMTP_USERNAME}
+  AUTHENTIK_EMAIL__PASSWORD: ${SMTP_PASSWORD}
+  AUTHENTIK_EMAIL__USE_TLS: ${SMTP_USE_TLS}
+  AUTHENTIK_EMAIL__USE_SSL: ${SMTP_USE_SSL}
+  AUTHENTIK_EMAIL__TIMEOUT: 30
+  AUTHENTIK_EMAIL__FROM: Authentik <no-reply@${DOMAIN}>
+
+services:
+  authentik_server:
+    image: ghcr.io/goauthentik/server:${AUTHENTIK_VERSION}
+    restart: unless-stopped
+    command: server
+    depends_on:
+      authentik_postgresql:
+        condition: service_healthy
+    environment:
+      <<: [*authentik_env]
+    volumes:
+      - authentik_media_data:/media
+      - authentik_custom_templates_data:/templates
+    networks:
+      - authentik_net
+      - authentik_ingress
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.authentik.rule=Host(`auth.${DOMAIN}`)
+      - traefik.http.routers.authentik.entrypoints=websecure
+      - traefik.http.routers.authentik.tls.certresolver=${TRAEFIK_CERT_RESOLVER}
+      - traefik.http.routers.authentik.tls.domains[0].main=auth.${DOMAIN}
+      - traefik.http.services.authentik.loadbalancer.server.port=9000
+      - traefik.docker.network=authentik_ingress
+      - traefik.http.middlewares.authentik_auth.forwardauth.address=http://authentik_server:9000/outpost.goauthentik.io/auth/traefik
+      - traefik.http.middlewares.authentik_auth.forwardauth.trustForwardHeader=true
+      - traefik.http.middlewares.authentik_auth.forwardauth.authResponseHeaders=X-authentik-username,X-authentik-groups,X-authentik-entitlements,X-authentik-email,X-authentik-name,X-authentik-uid,X-authentik-jwt,X-authentik-meta-jwks,X-authentik-meta-outpost,X-authentik-meta-provider,X-authentik-meta-app,X-authentik-meta-version
+
+  authentik_worker:
+    image: ghcr.io/goauthentik/server:${AUTHENTIK_VERSION}
+    restart: unless-stopped
+    user: root
+    command: worker
+    depends_on:
+      authentik_postgresql:
+        condition: service_healthy
+    environment:
+      <<: [*authentik_env]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - authentik_media_data:/media
+      - authentik_custom_templates_data:/templates
+      - authentik_certs_data:/certs
+    networks:
+      - authentik_net
+
+  authentik_postgresql:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${AUTHENTIK_PG_DB}
+      POSTGRES_USER: ${AUTHENTIK_PG_USER}
+      POSTGRES_PASSWORD: ${AUTHENTIK_PG_PASS}
+    volumes:
+      - authentik_db_data:/var/lib/postgresql/data
+    networks:
+      - authentik_net
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 20s
+      test:
+        - CMD-SHELL
+        - pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
+      timeout: 5s
+
+volumes:
+  authentik_media_data:
+  authentik_custom_templates_data:
+  authentik_certs_data:
+  authentik_db_data:
+
+networks:
+  authentik_net:
+  authentik_ingress:
+    name: authentik_ingress

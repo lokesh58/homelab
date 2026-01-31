@@ -1,0 +1,56 @@
+services:
+  traefik:
+    image: traefik:${TRAEFIK_VERSION}
+    restart: unless-stopped
+    command:
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.websecure.http.tls=true
+      - --entrypoints.web.http.redirections.entryPoint.to=websecure
+      - --entrypoints.web.http.redirections.entryPoint.scheme=https
+      - --entrypoints.web.http.redirections.entrypoint.permanent=true
+      - --entrypoints.websecure.http.tls.certresolver=${TRAEFIK_CERT_RESOLVER}
+      - --entrypoints.websecure.http.tls.domains[0].main=internal.${DOMAIN}
+      - --entrypoints.websecure.http.tls.domains[0].sans=*.internal.${DOMAIN}
+      - --certificatesresolvers.le-staging.acme.dnschallenge=true
+      - --certificatesresolvers.le-staging.acme.dnschallenge.provider=cloudflare
+      - --certificatesresolvers.le-staging.acme.email=${TRAEFIK_LE_EMAIL}
+      - --certificatesresolvers.le-staging.acme.storage=/letsencrypt/acme-staging.json
+      - --certificatesresolvers.le-staging.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
+      - --certificatesresolvers.le.acme.dnschallenge=true
+      - --certificatesresolvers.le.acme.dnschallenge.provider=cloudflare
+      - --certificatesresolvers.le.acme.email=${TRAEFIK_LE_EMAIL}
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.le.acme.caserver=https://acme-v02.api.letsencrypt.org/directory
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --api.dashboard=true
+      - --api.insecure=false
+      - --log.level=INFO
+    environment:
+      CF_DNS_API_TOKEN: ${TRAEFIK_CF_DNS_API_TOKEN}
+    ports:
+      - 80:80/tcp
+      - 443:443/tcp
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_certificates_data:/letsencrypt
+    networks:
+      - traefik_net
+      - adguard_ingress
+      - authentik_ingress
+      - open_webui_ingress
+      - penpot_ingress
+      - code_runner_ingress
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.dashboard.rule=Host(`traefik.internal.${DOMAIN}`)
+      - traefik.http.routers.dashboard.service=api@internal
+      - traefik.http.routers.dashboard.entrypoints=websecure
+      - traefik.http.routers.dashboard.middlewares=authentik_auth@docker
+
+volumes:
+  traefik_certificates_data:
+
+networks:
+  traefik_net:

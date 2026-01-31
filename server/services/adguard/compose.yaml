@@ -1,0 +1,27 @@
+services:
+  adguard:
+    image: adguard/adguardhome:${ADGUARD_VERSION}
+    restart: unless-stopped
+    ports:
+      - 53:53/tcp
+      - 53:53/udp
+      # - 3000:3000/tcp # uncomment for initial setup
+    volumes:
+      - adguard_work_data:/opt/adguardhome/work
+      - adguard_conf_data:/opt/adguardhome/conf
+    networks:
+      - adguard_ingress
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.adguard.rule=Host(`adguard.home.${DOMAIN}`)
+      - traefik.http.routers.adguard.entrypoints=websecure
+      - traefik.http.services.adguard.loadbalancer.server.port=80
+      - traefik.docker.network=adguard_ingress
+
+volumes:
+  adguard_work_data:
+  adguard_conf_data:
+
+networks:
+  adguard_ingress:
+    name: adguard_ingress

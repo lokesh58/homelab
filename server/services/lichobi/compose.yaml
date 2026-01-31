@@ -1,0 +1,14 @@
+services:
+  lichobi:
+    image: huakesh/lichobi:${LICHOBI_VERSION}
+    restart: unless-stopped
+    environment:
+      AI_PROVIDER: ${LICHOBI_AI_PROVIDER}
+      AI_API_KEY: ${LICHOBI_AI_API_KEY}
+      CODE_RUNNER_API_BASE_URL: http://code_runner:8080
+      CODE_RUNNER_API_TOKEN: ${CODERUNNER_API_TOKEN}
+      DEFAULT_PREFIX: !
+      DISCORD_BOT_TOKEN: ${LICHOBI_DISCORD_BOT_TOKEN}
+      LOG_LEVEL: info
+    networks:
+      - code_runner_ingress
