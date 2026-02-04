@@ -1,11 +1,16 @@
 name: homelab_server
 
 include:
+  # Infrastructure services
   - services/traefik/compose.yaml
   - services/adguard/compose.yaml
   - services/authentik/compose.yaml
+
+  # Open source applications
   - services/ollama/compose.yaml
   - services/open-webui/compose.yaml
   - services/penpot/compose.yaml
+
+  # Self developed applications
   - services/code-runner/compose.yaml
   - services/lichobi/compose.yaml
