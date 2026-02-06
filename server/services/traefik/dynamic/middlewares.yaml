@@ -1,0 +1,52 @@
+# Traefik Dynamic Configuration - Middlewares
+# This file defines reusable middlewares that can be referenced by services
+
+http:
+  middlewares:
+    # Authentik Forward Auth
+    # Used to protect services with Authentik authentication
+    # Reference in service labels: traefik.http.routers.myapp.middlewares=authentik-auth@file
+    authentik-auth:
+      forwardAuth:
+        address: http://authentik_server:9000/outpost.goauthentik.io/auth/traefik
+        trustForwardHeader: true
+        authResponseHeaders:
+          - X-authentik-username
+          - X-authentik-groups
+          - X-authentik-entitlements
+          - X-authentik-email
+          - X-authentik-name
+          - X-authentik-uid
+          - X-authentik-jwt
+          - X-authentik-meta-jwks
+          - X-authentik-meta-outpost
+          - X-authentik-meta-provider
+          - X-authentik-meta-app
+          - X-authentik-meta-version
+
+    # Security Headers
+    # Adds common security headers to responses
+    security-headers:
+      headers:
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        forceSTSHeader: true
+        customFrameOptionsValue: "SAMEORIGIN"
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: "strict-origin-when-cross-origin"
+
+    # Compression
+    # Compresses responses to reduce bandwidth
+    compress:
+      compress: {}
+
+    # Rate Limiting
+    # Limits requests to prevent abuse
+    rate-limit:
+      rateLimit:
+        average: 100
+        burst: 50
+        period: 1s
+
