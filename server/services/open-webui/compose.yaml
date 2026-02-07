@@ -24,6 +24,7 @@ services:
     networks:
       - open_webui_net
       - ollama_ingress
+      - traefik_proxy
     labels:
       - traefik.enable=true
       - traefik.http.routers.open_webui.entrypoints=websecure
