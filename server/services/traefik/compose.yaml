@@ -1,72 +1,87 @@
 services:
+  docker_socket_proxy:
+    image: tecnativa/docker-socket-proxy:${DOCKER_SOCKET_PROXY_VERSION}
+    restart: unless-stopped
+    environment:
+      # Enable only the Docker API endpoints that Traefik needs
+      CONTAINERS: 1  # Required: Read container info
+      NETWORKS: 1    # Required: Read network info
+      # Disable everything else for security
+      SERVICES: 0
+      TASKS: 0
+      EVENTS: 0
+      IMAGES: 0
+      INFO: 0
+      VOLUMES: 0
+      POST: 0        # Disable all write operations
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - docker_socket_proxy_ingress
+
   traefik:
     image: traefik:${TRAEFIK_VERSION}
     restart: unless-stopped
     command:
-      # === Entry Points ===
+      # === Entry Points: web (internal http) ===
       - --entrypoints.web.address=:80
-      - --entrypoints.websecure.address=:443
-      - --entrypoints.websecure.http.tls=true
-
-      # === HTTP to HTTPS Redirect ===
       - --entrypoints.web.http.redirections.entryPoint.to=websecure
       - --entrypoints.web.http.redirections.entryPoint.scheme=https
       - --entrypoints.web.http.redirections.entrypoint.permanent=true
-
-      # === Default TLS Configuration ===
-      - --entrypoints.websecure.http.tls.certresolver=${TRAEFIK_CERT_RESOLVER}
-      - --entrypoints.websecure.http.tls.domains[0].main=internal.${DOMAIN}
-      - --entrypoints.websecure.http.tls.domains[0].sans=*.internal.${DOMAIN}
-
-      # === Certificate Resolver: Staging (for testing) ===
-      - --certificatesresolvers.le-staging.acme.dnschallenge=true
-      - --certificatesresolvers.le-staging.acme.dnschallenge.provider=cloudflare
-      - --certificatesresolvers.le-staging.acme.email=${TRAEFIK_LE_EMAIL}
-      - --certificatesresolvers.le-staging.acme.storage=/letsencrypt/acme-staging.json
-      - --certificatesresolvers.le-staging.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
-
-      # === Certificate Resolver: Production ===
+      # === Entry Points: websecure (internal https) ===
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.websecure.http.tls=true
+      - --entrypoints.websecure.http.tls.certresolver=le
+      - --entrypoints.websecure.http.tls.domains[0].main=${DOMAIN}
+      - --entrypoints.websecure.http.tls.domains[0].sans=*.${DOMAIN},*.internal.${DOMAIN}
+      # === Certificate Resolver: LetsEncrypt ===
       - --certificatesresolvers.le.acme.dnschallenge=true
       - --certificatesresolvers.le.acme.dnschallenge.provider=cloudflare
       - --certificatesresolvers.le.acme.email=${TRAEFIK_LE_EMAIL}
       - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
       - --certificatesresolvers.le.acme.caserver=https://acme-v02.api.letsencrypt.org/directory
-
       # === Docker Provider ===
       - --providers.docker=true
+      - --providers.docker.endpoint=tcp://docker_socket_proxy:2375
       - --providers.docker.exposedbydefault=false
-
+      - --providers.docker.network=traefik_proxy
       # === File Provider (for dynamic configuration) ===
       - --providers.file.directory=/etc/traefik/dynamic
       - --providers.file.watch=true
-
       # === API & Dashboard ===
       - --api.dashboard=true
       - --api.insecure=false
-
       # === Logging ===
       - --log.level=INFO
+    depends_on:
+      - docker_socket_proxy
     environment:
       CF_DNS_API_TOKEN: ${TRAEFIK_CF_DNS_API_TOKEN}
     ports:
       - 80:80/tcp
       - 443:443/tcp
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./dynamic:/etc/traefik/dynamic:ro
-      - traefik_ssl_certificates:/letsencrypt
+      - letsencrypt:/letsencrypt
     networks:
-      - adguard_ingress
-      - authentik_ingress
-      - open_webui_ingress
-      - penpot_ingress
-      - code_runner_ingress
+      - traefik_net
+      - traefik_proxy
+      - docker_socket_proxy_ingress
     labels:
       - traefik.enable=true
-      - traefik.http.routers.dashboard.rule=Host(`traefik.internal.${DOMAIN}`)
-      - traefik.http.routers.dashboard.service=api@internal
       - traefik.http.routers.dashboard.entrypoints=websecure
-      - traefik.http.routers.dashboard.middlewares=authentik-auth@file
+      - traefik.http.routers.dashboard.rule=Host(`traefik.internal.${DOMAIN}`)
+      - traefik.http.routers.dashboard.middlewares=authentik_auth@file
+      - traefik.http.routers.dashboard.service=api@internal
+
+networks:
+  docker_socket_proxy_ingress:
+    internal: true
+  traefik_net:
+    internal: false
+  traefik_proxy:
+    name: traefik_proxy
+    internal: true
 
 volumes:
-  traefik_ssl_certificates:
+  letsencrypt:
