@@ -17,6 +17,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
+      - docker_socket_proxy_net
       - docker_socket_proxy_ingress
 
   traefik:
@@ -75,6 +76,8 @@ services:
       - traefik.http.routers.traefik_dashboard.service=api@internal
 
 networks:
+  docker_socket_proxy_net:
+    internal: true
   docker_socket_proxy_ingress:
     internal: true
   traefik_net:
