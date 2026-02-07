@@ -5,16 +5,17 @@ services:
     environment:
       API_TOKEN: ${CODERUNNER_API_TOKEN}
     networks:
+      - code_runner_net
       - code_runner_ingress
+      - traefik_proxy
     labels:
       - traefik.enable=true
-      - traefik.http.routers.code_runner.rule=Host(`code-runner.${DOMAIN}`)
       - traefik.http.routers.code_runner.entrypoints=websecure
-      - traefik.http.routers.code_runner.tls.certresolver=${TRAEFIK_CERT_RESOLVER}
-      - traefik.http.routers.code_runner.tls.domains[0].main=code-runner.${DOMAIN}
+      - traefik.http.routers.code_runner.rule=Host(`code-runner.${DOMAIN}`)
       - traefik.http.services.code_runner.loadbalancer.server.port=8080
-      - traefik.docker.network=code_runner_ingress
 
 networks:
+  code_runner_net:
+    internal: true
   code_runner_ingress:
-    name: code_runner_ingress
+    internal: true
