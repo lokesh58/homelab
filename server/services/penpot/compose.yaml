@@ -23,18 +23,15 @@ services:
     environment:
       <<: [*penpot_flags, *penpot_http_body_size]
     volumes:
-      - penpot_assets_data:/opt/data/assets
+      - penpot_assets:/opt/data/assets
     networks:
       - penpot_net
-      - penpot_ingress
+      - traefik_proxy
     labels:
       - traefik.enable=true
-      - traefik.http.routers.penpot.rule=Host(`penpot.${DOMAIN}`)
       - traefik.http.routers.penpot.entrypoints=websecure
-      - traefik.http.routers.penpot.tls.certresolver=${TRAEFIK_CERT_RESOLVER}
-      - traefik.http.routers.penpot.tls.domains[0].main=penpot.${DOMAIN}
+      - traefik.http.routers.penpot.rule=Host(`penpot.${DOMAIN}`)
       - traefik.http.services.penpot.loadbalancer.server.port=8080
-      - traefik.docker.network=penpot_ingress
 
   penpot_backend:
     image: docker.io/penpotapp/backend:${PENPOT_VERSION}
@@ -64,7 +61,7 @@ services:
       PENPOT_OIDC_CLIENT_SECRET: ${PENPOT_OIDC_SECRET}
       PENPOT_OIDC_BASE_URI: https://auth.${DOMAIN}/application/o/${PENPOT_OIDC_SLUG}/
     volumes:
-      - penpot_assets_data:/opt/data/assets
+      - penpot_assets:/opt/data/assets
     networks:
       - penpot_net
 
@@ -120,10 +117,9 @@ services:
       start_period: 3s
 
 volumes:
-  penpot_assets_data:
+  penpot_assets:
   penpot_db_data:
 
 networks:
   penpot_net:
-  penpot_ingress:
-    name: penpot_ingress
+    internal: false
