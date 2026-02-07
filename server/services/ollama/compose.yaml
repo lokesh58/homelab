@@ -5,6 +5,7 @@ services:
     volumes:
       - ollama_data:/root/.ollama
     networks:
+      - ollama_net
       - ollama_ingress
     deploy:
       resources:
@@ -18,5 +19,7 @@ volumes:
   ollama_data:
 
 networks:
+  ollama_net:
+    internal: false
   ollama_ingress:
-    name: ollama_ingress
+    internal: true
