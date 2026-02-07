@@ -1,6 +1,6 @@
 services:
   open_webui:
-    image: ghcr.io/open-webui/open-webui:${VERSION}
+    image: ghcr.io/open-webui/open-webui:${OPENWEBUI_VERSION}
     restart: unless-stopped
     environment:
       OLLAMA_BASE_URL: http://ollama:11434
@@ -22,16 +22,13 @@ services:
     volumes:
       - open_webui_data:/app/backend/data
     networks:
+      - open_webui_net
       - ollama_ingress
-      - open_webui_ingress
     labels:
       - traefik.enable=true
-      - traefik.http.routers.open_webui.rule=Host(`openwebui.${DOMAIN}`)
       - traefik.http.routers.open_webui.entrypoints=websecure
-      - traefik.http.routers.open_webui.tls.certresolver=${TRAEFIK_CERT_RESOLVER}
-      - traefik.http.routers.open_webui.tls.domains[0].main=openwebui.${DOMAIN}
+      - traefik.http.routers.open_webui.rule=Host(`openwebui.${DOMAIN}`)
       - traefik.http.services.open_webui.loadbalancer.server.port=8080
-      - traefik.docker.network=open_webui_ingress
     deploy:
       resources:
         reservations:
@@ -44,5 +41,5 @@ volumes:
   open_webui_data:
 
 networks:
-  open_webui_ingress:
-    name: open_webui_ingress
+  open_webui_net:
+    internal: false
