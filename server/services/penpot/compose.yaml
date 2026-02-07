@@ -15,7 +15,7 @@ x-penpot_secret_key: &penpot_secret_key
 
 services:
   penpot_frontend:
-    image: penpotapp/frontend:${PENPOT_VERSION}
+    image: docker.io/penpotapp/frontend:${PENPOT_VERSION}
     restart: unless-stopped
     depends_on:
       - penpot_backend
@@ -37,7 +37,7 @@ services:
       - traefik.docker.network=penpot_ingress
 
   penpot_backend:
-    image: penpotapp/backend:${PENPOT_VERSION}
+    image: docker.io/penpotapp/backend:${PENPOT_VERSION}
     restart: unless-stopped
     depends_on:
       penpot_postgres:
@@ -69,7 +69,7 @@ services:
       - penpot_net
 
   penpot_exporter:
-    image: penpotapp/exporter:${PENPOT_VERSION}
+    image: docker.io/penpotapp/exporter:${PENPOT_VERSION}
     restart: unless-stopped
     depends_on:
       penpot_valkey:
@@ -82,7 +82,7 @@ services:
       - penpot_net
 
   penpot_postgres:
-    image: postgres:15
+    image: docker.io/library/postgres:15
     restart: unless-stopped
     stop_signal: SIGINT
     environment:
@@ -104,7 +104,7 @@ services:
       start_period: 2s
 
   penpot_valkey:
-    image: valkey/valkey:8.1
+    image: docker.io/valkey/valkey:8.1
     restart: unless-stopped
     environment:
       VALKEY_EXTRA_FLAGS: --maxmemory 128mb --maxmemory-policy volatile-lfu

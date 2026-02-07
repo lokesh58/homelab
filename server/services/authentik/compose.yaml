@@ -58,7 +58,7 @@ services:
       - authentik_net
 
   authentik_postgresql:
-    image: postgres:16-alpine
+    image: docker.io/library/postgres:16-alpine
     restart: unless-stopped
     healthcheck:
       interval: 30s

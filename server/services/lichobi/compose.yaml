@@ -1,6 +1,6 @@
 services:
   lichobi:
-    image: huakesh/lichobi:${LICHOBI_VERSION}
+    image: docker.io/huakesh/lichobi:${LICHOBI_VERSION}
     restart: unless-stopped
     environment:
       AI_PROVIDER: ${LICHOBI_AI_PROVIDER}

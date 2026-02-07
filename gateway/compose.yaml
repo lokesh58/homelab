@@ -2,7 +2,7 @@ name: homelab_gateway
 
 services:
   wireguard:
-    image: linuxserver/wireguard:latest
+    image: docker.io/linuxserver/wireguard:latest
     restart: unless-stopped
     cap_add:
       - NET_ADMIN
@@ -28,7 +28,7 @@ services:
       - 443:443  # used by nginx
 
   nginx:
-    image: nginx:alpine
+    image: docker.io/library/nginx:alpine
     restart: unless-stopped
     depends_on:
       - wireguard
@@ -37,7 +37,7 @@ services:
     network_mode: service:wireguard
 
   crowdsec:
-    image: crowdsecurity/crowdsec:latest
+    image: docker.io/crowdsecurity/crowdsec:latest
     restart: unless-stopped
     environment:
       - COLLECTIONS=crowdsecurity/linux crowdsecurity/sshd

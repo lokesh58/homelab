@@ -1,6 +1,6 @@
 services:
   adguard:
-    image: adguard/adguardhome:${ADGUARD_VERSION}
+    image: docker.io/adguard/adguardhome:${ADGUARD_VERSION}
     restart: unless-stopped
     ports:
       - 53:53/tcp
