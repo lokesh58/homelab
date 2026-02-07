@@ -23,6 +23,8 @@ services:
   traefik:
     image: traefik:${TRAEFIK_VERSION}
     restart: unless-stopped
+    depends_on:
+      - docker_socket_proxy
     command:
       # === Entry Points: web (internal http) ===
       - --entrypoints.web.address=:80
@@ -54,8 +56,6 @@ services:
       - --api.insecure=false
       # === Logging ===
       - --log.level=INFO
-    depends_on:
-      - docker_socket_proxy
     environment:
       CF_DNS_API_TOKEN: ${TRAEFIK_CF_DNS_API_TOKEN}
     ports:
