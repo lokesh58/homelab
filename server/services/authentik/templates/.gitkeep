@@ -1,0 +1,8 @@
+# Authentik Custom Templates
+#
+# Place your custom email templates, login page templates, and error pages here.
+# These templates will be mounted into the Authentik containers.
+#
+# For template documentation, see:
+# https://docs.goauthentik.io/docs/flow/stages/email/templates
+

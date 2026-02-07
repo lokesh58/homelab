@@ -22,52 +22,44 @@ services:
   authentik_server:
     image: ghcr.io/goauthentik/server:${AUTHENTIK_VERSION}
     restart: unless-stopped
-    command: server
     depends_on:
       authentik_postgresql:
         condition: service_healthy
+    command: server
     environment:
       <<: [*authentik_env]
     volumes:
-      - authentik_media_data:/media
-      - authentik_custom_templates_data:/templates
+      - authentik_media:/media
+      - ./templates:/templates:ro
     networks:
       - authentik_net
       - traefik_proxy
     labels:
       - traefik.enable=true
-      - traefik.http.routers.authentik.rule=Host(`auth.${DOMAIN}`)
       - traefik.http.routers.authentik.entrypoints=websecure
+      - traefik.http.routers.authentik.rule=Host(`auth.${DOMAIN}`)
       - traefik.http.services.authentik.loadbalancer.server.port=9000
 
   authentik_worker:
     image: ghcr.io/goauthentik/server:${AUTHENTIK_VERSION}
     restart: unless-stopped
     user: root
-    command: worker
     depends_on:
       authentik_postgresql:
         condition: service_healthy
+    command: worker
     environment:
       <<: [*authentik_env]
     volumes:
-      - authentik_media_data:/media
-      - authentik_custom_templates_data:/templates
-      - authentik_certs_data:/certs
+      - authentik_media:/media
+      - ./templates:/templates:ro
+      - authentik_certs:/certs
     networks:
       - authentik_net
 
   authentik_postgresql:
     image: postgres:16-alpine
     restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${AUTHENTIK_PG_DB}
-      POSTGRES_USER: ${AUTHENTIK_PG_USER}
-      POSTGRES_PASSWORD: ${AUTHENTIK_PG_PASS}
-    volumes:
-      - authentik_db_data:/var/lib/postgresql/data
-    networks:
-      - authentik_net
     healthcheck:
       interval: 30s
       retries: 5
@@ -76,11 +68,18 @@ services:
         - CMD-SHELL
         - pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
       timeout: 5s
+    environment:
+      POSTGRES_DB: ${AUTHENTIK_PG_DB}
+      POSTGRES_USER: ${AUTHENTIK_PG_USER}
+      POSTGRES_PASSWORD: ${AUTHENTIK_PG_PASS}
+    volumes:
+      - authentik_db_data:/var/lib/postgresql/data
+    networks:
+      - authentik_net
 
 volumes:
-  authentik_media_data:
-  authentik_custom_templates_data:
-  authentik_certs_data:
+  authentik_media:
+  authentik_certs:
   authentik_db_data:
 
 networks:
