@@ -11,4 +11,9 @@ services:
       DISCORD_BOT_TOKEN: ${LICHOBI_DISCORD_BOT_TOKEN}
       LOG_LEVEL: info
     networks:
+      - lichobi_net
       - code_runner_ingress
+
+networks:
+  lichobi_net:
+    internal: false
