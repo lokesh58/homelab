@@ -33,15 +33,12 @@ services:
       - authentik_custom_templates_data:/templates
     networks:
       - authentik_net
-      - authentik_ingress
+      - traefik_proxy
     labels:
       - traefik.enable=true
       - traefik.http.routers.authentik.rule=Host(`auth.${DOMAIN}`)
       - traefik.http.routers.authentik.entrypoints=websecure
-      - traefik.http.routers.authentik.tls.certresolver=${TRAEFIK_CERT_RESOLVER}
-      - traefik.http.routers.authentik.tls.domains[0].main=auth.${DOMAIN}
       - traefik.http.services.authentik.loadbalancer.server.port=9000
-      - traefik.docker.network=authentik_ingress
 
   authentik_worker:
     image: ghcr.io/goauthentik/server:${AUTHENTIK_VERSION}
