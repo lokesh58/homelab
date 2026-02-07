@@ -69,10 +69,10 @@ services:
       - docker_socket_proxy_ingress
     labels:
       - traefik.enable=true
-      - traefik.http.routers.dashboard.entrypoints=websecure
-      - traefik.http.routers.dashboard.rule=Host(`traefik.internal.${DOMAIN}`)
-      - traefik.http.routers.dashboard.middlewares=authentik_auth@file
-      - traefik.http.routers.dashboard.service=api@internal
+      - traefik.http.routers.traefik_dashboard.entrypoints=websecure
+      - traefik.http.routers.traefik_dashboard.rule=Host(`traefik.internal.${DOMAIN}`)
+      - traefik.http.routers.traefik_dashboard.middlewares=authentik_auth@file
+      - traefik.http.routers.traefik_dashboard.service=api@internal
 
 networks:
   docker_socket_proxy_ingress:
