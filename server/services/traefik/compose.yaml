@@ -68,6 +68,7 @@ services:
       - --entrypoints.web_public.http.redirections.entryPoint.to=websecure_public
       - --entrypoints.web_public.http.redirections.entryPoint.scheme=https
       - --entrypoints.web_public.http.redirections.entrypoint.permanent=true
+      - --entrypoints.web_public.http.middlewares=crowdsec@file
       # === Entry Points: websecure_public (external https via VPN) ===
       - --entrypoints.websecure_public.address=:8443
       - --entrypoints.websecure_public.proxyProtocol.trustedIPs=10.13.13.0/24
@@ -75,6 +76,7 @@ services:
       - --entrypoints.websecure_public.http.tls.certresolver=le
       - --entrypoints.websecure_public.http.tls.domains[0].main=${DOMAIN}
       - --entrypoints.websecure_public.http.tls.domains[0].sans=*.${DOMAIN}
+      - --entrypoints.websecure_public.http.middlewares=crowdsec@file
       # === Certificate Resolver: LetsEncrypt ===
       - --certificatesresolvers.le.acme.dnschallenge=true
       - --certificatesresolvers.le.acme.dnschallenge.provider=cloudflare
@@ -94,17 +96,40 @@ services:
       - --api.insecure=false
       # === Logging ===
       - --log.level=INFO
+      # === Access Logs (for CrowdSec) ===
+      - --accesslog=true
+      - --accesslog.filepath=/var/log/traefik/access.log
+      - --accesslog.bufferingsize=100
+      - --accesslog.format=json
+      # === Experimental Plugins ===
+      - --experimental.plugins.crowdsec_bouncer_traefik_plugin.moduleName=github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin
+      - --experimental.plugins.crowdsec_bouncer_traefik_plugin.version=v1.4.6
     environment:
       CF_DNS_API_TOKEN: ${TRAEFIK_CF_DNS_API_TOKEN}
     volumes:
       - ./dynamic:/etc/traefik/dynamic:ro
       - letsencrypt:/letsencrypt
+      - traefik_logs:/var/log/traefik
     labels:
       - traefik.enable=true
       - traefik.http.routers.traefik_dashboard.entrypoints=websecure
       - traefik.http.routers.traefik_dashboard.rule=Host(`traefik.internal.${DOMAIN}`)
       - traefik.http.routers.traefik_dashboard.middlewares=authentik_auth@file
       - traefik.http.routers.traefik_dashboard.service=api@internal
+
+  crowdsec:
+    image: docker.io/crowdsecurity/crowdsec:v1.7.6
+    restart: unless-stopped
+    environment:
+      - COLLECTIONS=crowdsecurity/traefik crowdsecurity/appsec-virtual-patching crowdsecurity/appsec-generic-rules
+    volumes:
+      - crowdsec_config:/etc/crowdsec
+      - ./crowdsec/acquis.d:/etc/crowdsec/acquis.d:ro
+      - ./crowdsec/acquis.yaml:/etc/crowdsec/acquis.yaml:ro
+      - crowdsec_db:/var/lib/crowdsec/data
+      - traefik_logs:/var/log/traefik:ro
+    networks:
+      - traefik_net
 
 networks:
   docker_socket_proxy_net:
@@ -120,5 +145,6 @@ networks:
 volumes:
   wireguard_config:
   letsencrypt:
-
-
+  traefik_logs:
+  crowdsec_config:
+  crowdsec_db:

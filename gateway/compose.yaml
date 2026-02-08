@@ -20,8 +20,8 @@ services:
       - ALLOWEDIPS=10.13.13.0/24
     volumes:
       - wireguard_config:/config
-      - ./wireguard/templates:/config/templates
-      # - /lib/modules:/lib/modules # optional: Path to host kernel module for situations where it's not already loaded.
+      - ./wireguard/templates:/config/templates:ro
+      # - /lib/modules:/lib/modules:ro # optional: Path to host kernel module for situations where it's not already loaded.
     ports:
       - 51820:51820/udp
       - 80:80    # used by nginx
@@ -43,8 +43,8 @@ services:
       - COLLECTIONS=crowdsecurity/linux crowdsecurity/sshd
     volumes:
       - crowdsec_config:/etc/crowdsec
-      - ./crowdsec/acquis.d:/etc/crowdsec/acquis.d
-      - ./crowdsec/acquis.yaml:/etc/crowdsec/acquis.yaml
+      - ./crowdsec/acquis.d:/etc/crowdsec/acquis.d:ro
+      - ./crowdsec/acquis.yaml:/etc/crowdsec/acquis.yaml:ro
       - crowdsec_db:/var/lib/crowdsec/data
       - /var/log/auth.log:/var/log/auth.log:ro
       - /var/log/syslog:/var/log/syslog:ro
