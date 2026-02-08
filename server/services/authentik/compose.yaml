@@ -36,7 +36,7 @@ services:
       - traefik_proxy
     labels:
       - traefik.enable=true
-      - traefik.http.routers.authentik.entrypoints=websecure
+      - traefik.http.routers.authentik.entrypoints=websecure,websecure_public
       - traefik.http.routers.authentik.rule=Host(`auth.${DOMAIN}`)
       - traefik.http.services.authentik.loadbalancer.server.port=9000
 

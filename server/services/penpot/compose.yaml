@@ -29,7 +29,7 @@ services:
       - traefik_proxy
     labels:
       - traefik.enable=true
-      - traefik.http.routers.penpot.entrypoints=websecure
+      - traefik.http.routers.penpot.entrypoints=websecure,websecure_public
       - traefik.http.routers.penpot.rule=Host(`penpot.${DOMAIN}`)
       - traefik.http.services.penpot.loadbalancer.server.port=8080
 
