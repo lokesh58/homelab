@@ -20,11 +20,36 @@ services:
       - docker_socket_proxy_net
       - docker_socket_proxy_ingress
 
+  wireguard:
+    image: docker.io/linuxserver/wireguard:1.0.20250521
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      # - SYS_MODULE # optional: Necessary for loading Wireguard kernel module if it's not already loaded.
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+    volumes:
+      - wireguard_config:/config
+      # - /lib/modules:/lib/modules # optional: Path to host kernel module for situations where it's not already loaded.
+    ports:
+      - 80:80/tcp    # used by traefik
+      - 443:443/tcp  # used by traefik
+    networks:
+      - traefik_net
+      - traefik_proxy
+      - docker_socket_proxy_ingress
+
   traefik:
     image: docker.io/library/traefik:3.6
     restart: unless-stopped
     depends_on:
       - docker_socket_proxy
+      - wireguard
+    network_mode: service:wireguard
     command:
       # === Entry Points: web (internal http) ===
       - --entrypoints.web.address=:80
@@ -37,6 +62,19 @@ services:
       - --entrypoints.websecure.http.tls.certresolver=le
       - --entrypoints.websecure.http.tls.domains[0].main=${DOMAIN}
       - --entrypoints.websecure.http.tls.domains[0].sans=*.${DOMAIN},*.internal.${DOMAIN}
+      # === Entry Points: web_public (external http via VPN) ===
+      - --entrypoints.web_public.address=:8080
+      - --entrypoints.web_public.proxyProtocol.trustedIPs=10.13.13.0/24
+      - --entrypoints.web_public.http.redirections.entryPoint.to=websecure_public
+      - --entrypoints.web_public.http.redirections.entryPoint.scheme=https
+      - --entrypoints.web_public.http.redirections.entrypoint.permanent=true
+      # === Entry Points: websecure_public (external https via VPN) ===
+      - --entrypoints.websecure_public.address=:8443
+      - --entrypoints.websecure_public.proxyProtocol.trustedIPs=10.13.13.0/24
+      - --entrypoints.websecure_public.http.tls=true
+      - --entrypoints.websecure_public.http.tls.certresolver=le
+      - --entrypoints.websecure_public.http.tls.domains[0].main=${DOMAIN}
+      - --entrypoints.websecure_public.http.tls.domains[0].sans=*.${DOMAIN}
       # === Certificate Resolver: LetsEncrypt ===
       - --certificatesresolvers.le.acme.dnschallenge=true
       - --certificatesresolvers.le.acme.dnschallenge.provider=cloudflare
@@ -58,16 +96,9 @@ services:
       - --log.level=INFO
     environment:
       CF_DNS_API_TOKEN: ${TRAEFIK_CF_DNS_API_TOKEN}
-    ports:
-      - 80:80/tcp
-      - 443:443/tcp
     volumes:
       - ./dynamic:/etc/traefik/dynamic:ro
       - letsencrypt:/letsencrypt
-    networks:
-      - traefik_net
-      - traefik_proxy
-      - docker_socket_proxy_ingress
     labels:
       - traefik.enable=true
       - traefik.http.routers.traefik_dashboard.entrypoints=websecure
@@ -87,4 +118,7 @@ networks:
     internal: true
 
 volumes:
+  wireguard_config:
   letsencrypt:
+
+
