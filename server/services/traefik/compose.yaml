@@ -1,6 +1,6 @@
 services:
   docker_socket_proxy:
-    image: docker.io/tecnativa/docker-socket-proxy:${DOCKER_SOCKET_PROXY_VERSION}
+    image: docker.io/tecnativa/docker-socket-proxy:v0.4.2
     restart: unless-stopped
     environment:
       # Enable only the Docker API endpoints that Traefik needs
@@ -21,7 +21,7 @@ services:
       - docker_socket_proxy_ingress
 
   traefik:
-    image: docker.io/library/traefik:${TRAEFIK_VERSION}
+    image: docker.io/library/traefik:3.6
     restart: unless-stopped
     depends_on:
       - docker_socket_proxy

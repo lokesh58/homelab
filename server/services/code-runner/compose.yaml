@@ -1,6 +1,6 @@
 services:
   code_runner:
-    image: docker.io/huakesh/code-runner:${CODERUNNER_VERSION}
+    image: docker.io/huakesh/code-runner:0.1
     restart: unless-stopped
     environment:
       API_TOKEN: ${CODERUNNER_API_TOKEN}

@@ -2,11 +2,11 @@ name: homelab_gateway
 
 services:
   wireguard:
-    image: docker.io/linuxserver/wireguard:latest
+    image: docker.io/linuxserver/wireguard:1.0.20250521
     restart: unless-stopped
     cap_add:
       - NET_ADMIN
-      # - SYS_MODULE # optional: Neccessary for loading Wireguard kernel module if it's not already loaded.
+      # - SYS_MODULE # optional: Necessary for loading Wireguard kernel module if it's not already loaded.
     sysctls:
       - net.ipv4.conf.all.src_valid_mark=1
     environment:
@@ -28,7 +28,7 @@ services:
       - 443:443  # used by nginx
 
   nginx:
-    image: docker.io/library/nginx:alpine
+    image: docker.io/library/nginx:1.28-alpine
     restart: unless-stopped
     depends_on:
       - wireguard
@@ -37,7 +37,7 @@ services:
     network_mode: service:wireguard
 
   crowdsec:
-    image: docker.io/crowdsecurity/crowdsec:latest
+    image: docker.io/crowdsecurity/crowdsec:v1.7.6
     restart: unless-stopped
     environment:
       - COLLECTIONS=crowdsecurity/linux crowdsecurity/sshd

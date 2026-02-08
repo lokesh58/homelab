@@ -1,6 +1,6 @@
 services:
   ollama:
-    image: docker.io/ollama/ollama:${OLLAMA_VERSION}
+    image: docker.io/ollama/ollama:0.15.6
     restart: unless-stopped
     volumes:
       - ollama_data:/root/.ollama

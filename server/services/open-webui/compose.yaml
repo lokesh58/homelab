@@ -1,6 +1,6 @@
 services:
   open_webui:
-    image: ghcr.io/open-webui/open-webui:${OPENWEBUI_VERSION}
+    image: ghcr.io/open-webui/open-webui:v0.7.2-cuda
     restart: unless-stopped
     environment:
       OLLAMA_BASE_URL: http://ollama:11434

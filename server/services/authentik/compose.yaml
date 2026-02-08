@@ -20,7 +20,7 @@ x-authentik_env: &authentik_env
 
 services:
   authentik_server:
-    image: ghcr.io/goauthentik/server:${AUTHENTIK_VERSION}
+    image: ghcr.io/goauthentik/server:2025.10.3
     restart: unless-stopped
     depends_on:
       authentik_postgresql:
@@ -41,7 +41,7 @@ services:
       - traefik.http.services.authentik.loadbalancer.server.port=9000
 
   authentik_worker:
-    image: ghcr.io/goauthentik/server:${AUTHENTIK_VERSION}
+    image: ghcr.io/goauthentik/server:2025.10.3
     restart: unless-stopped
     user: root
     depends_on:
