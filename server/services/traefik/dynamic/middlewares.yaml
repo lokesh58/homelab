@@ -26,3 +26,4 @@ http:
           crowdsecAppsecHost: crowdsec:7422
           crowdsecAppsecFailureBlock: true
           crowdsecAppsecUnreachableBlock: true
+          crowdsecAppsecBodyLimit: 367001600  # 350 MiB - matches Penpot's max multipart upload size
