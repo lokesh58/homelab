@@ -66,7 +66,9 @@ services:
     volumes:
       - penpot_assets:/opt/data/assets
     networks:
-      - penpot_net
+      penpot_net:
+        aliases:
+          - penpot-backend # required by this name by frontend
 
   penpot_exporter:
     image: docker.io/penpotapp/exporter:2.12.1
