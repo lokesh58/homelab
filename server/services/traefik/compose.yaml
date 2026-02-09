@@ -41,6 +41,8 @@ services:
   wireguard:
     image: docker.io/linuxserver/wireguard:1.0.20250521
     restart: unless-stopped
+    depends_on:
+      - traefik
     cap_add:
       - NET_ADMIN
       # - SYS_MODULE # optional: Necessary for loading Wireguard kernel module if it's not already loaded.
@@ -53,13 +55,13 @@ services:
     volumes:
       - wireguard_config:/config
       # - /lib/modules:/lib/modules # optional: Path to host kernel module for situations where it's not already loaded.
+    network_mode: service:traefik
 
   traefik:
     image: docker.io/library/traefik:3.6
     restart: unless-stopped
     depends_on:
       - docker_socket_proxy
-      - wireguard
     command:
       # === Entry Points: web (internal http) ===
       - --entrypoints.web.address=:80
