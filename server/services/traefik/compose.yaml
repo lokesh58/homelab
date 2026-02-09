@@ -101,6 +101,7 @@ services:
       # === File Provider (for dynamic configuration) ===
       - --providers.file.directory=/etc/traefik/dynamic
       - --providers.file.watch=true
+      - --providers.file.templating=true
       # === API & Dashboard ===
       - --api.dashboard=true
       - --api.insecure=false
@@ -119,6 +120,7 @@ services:
       - 443:443/tcp
     environment:
       CF_DNS_API_TOKEN: ${TRAEFIK_CF_DNS_API_TOKEN}
+      TRAEFIK_CROWDSEC_LAPI_KEY: ${TRAEFIK_CROWDSEC_LAPI_KEY}
     volumes:
       - ./dynamic:/etc/traefik/dynamic:ro
       - letsencrypt:/letsencrypt

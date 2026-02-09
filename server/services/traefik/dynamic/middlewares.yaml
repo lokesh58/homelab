@@ -23,7 +23,10 @@ http:
         crowdsec_bouncer_traefik_plugin:
           enabled: true
           crowdsecMode: appsec
+          crowdsecAppsecEnabled: true
           crowdsecAppsecHost: crowdsec:7422
           crowdsecAppsecFailureBlock: true
           crowdsecAppsecUnreachableBlock: true
           crowdsecAppsecBodyLimit: 367001600  # 350 MiB - matches Penpot's max multipart upload size
+          crowdsecLapiHost: "http://crowdsec:8080"
+          crowdsecLapiKey: "{{ env \"TRAEFIK_CROWDSEC_LAPI_KEY\" }}"
