@@ -4,16 +4,34 @@ services:
     restart: unless-stopped
     environment:
       # Enable only the Docker API endpoints that Traefik needs
-      CONTAINERS: 1  # Required: Read container info
-      NETWORKS: 1    # Required: Read network info
+      EVENTS: 1
+      PING: 1
+      VERSION: 1
+      CONTAINERS: 1
+      NETWORKS: 1
       # Disable everything else for security
-      SERVICES: 0
-      TASKS: 0
-      EVENTS: 0
+      AUTH: 0
+      SECRETS: 0
+      POST: 0        # Disable all write operations
+      BUILD: 0
+      COMMIT: 0
+      CONFIGS: 0
+      ALLOW_START: 0
+      ALLOW_STOP: 0
+      ALLOW_RESTARTS: 0
+      DISTRIBUTION: 0
+      EXEC: 0
+      GRPC: 0
       IMAGES: 0
       INFO: 0
+      NODES: 0
+      PLUGINS: 0
+      SERVICES: 0
+      SESSION: 0
+      SWARM: 0
+      SYSTEM: 0
+      TASKS: 0
       VOLUMES: 0
-      POST: 0        # Disable all write operations
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
@@ -35,13 +53,6 @@ services:
     volumes:
       - wireguard_config:/config
       # - /lib/modules:/lib/modules # optional: Path to host kernel module for situations where it's not already loaded.
-    ports:
-      - 80:80/tcp    # used by traefik
-      - 443:443/tcp  # used by traefik
-    networks:
-      - traefik_net
-      - traefik_proxy
-      - docker_socket_proxy_ingress
 
   traefik:
     image: docker.io/library/traefik:3.6
@@ -49,7 +60,6 @@ services:
     depends_on:
       - docker_socket_proxy
       - wireguard
-    network_mode: service:wireguard
     command:
       # === Entry Points: web (internal http) ===
       - --entrypoints.web.address=:80
@@ -104,12 +114,19 @@ services:
       # === Experimental Plugins ===
       - --experimental.plugins.crowdsec_bouncer_traefik_plugin.moduleName=github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin
       - --experimental.plugins.crowdsec_bouncer_traefik_plugin.version=v1.4.6
+    ports:
+      - 80:80/tcp
+      - 443:443/tcp
     environment:
       CF_DNS_API_TOKEN: ${TRAEFIK_CF_DNS_API_TOKEN}
     volumes:
       - ./dynamic:/etc/traefik/dynamic:ro
       - letsencrypt:/letsencrypt
       - traefik_logs:/var/log/traefik
+    networks:
+      - traefik_net
+      - traefik_proxy
+      - docker_socket_proxy_ingress
     labels:
       - traefik.enable=true
       - traefik.http.routers.traefik_dashboard.entrypoints=websecure
