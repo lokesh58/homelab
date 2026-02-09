@@ -81,7 +81,9 @@ services:
       PENPOT_PUBLIC_URI: http://penpot_frontend:8080
       PENPOT_REDIS_URI: redis://penpot_valkey/0
     networks:
-      - penpot_net
+      penpot_net:
+        aliases:
+          - penpot-exporter # required by this name by frontend
 
   penpot_postgres:
     image: docker.io/library/postgres:15
