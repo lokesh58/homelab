@@ -59,7 +59,10 @@ services:
       PENPOT_SMTP_SSL: ${SMTP_USE_SSL}
       PENPOT_OIDC_CLIENT_ID: ${PENPOT_OIDC_ID}
       PENPOT_OIDC_CLIENT_SECRET: ${PENPOT_OIDC_SECRET}
-      PENPOT_OIDC_BASE_URI: https://auth.${DOMAIN}/application/o/${PENPOT_OIDC_SLUG}/
+      PENPOT_OIDC_BASE_URI: https://auth.${DOMAIN}/application/o/penpot/
+      PENPOT_OIDC_AUTH_URI: https://auth.${DOMAIN}/application/o/authorize/
+      PENPOT_OIDC_TOKEN_URI: https://auth.${DOMAIN}/application/o/token/
+      PENPOT_OIDC_USER_URI: https://auth.${DOMAIN}/application/o/userinfo/
     volumes:
       - penpot_assets:/opt/data/assets
     networks:
