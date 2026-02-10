@@ -141,7 +141,7 @@ services:
     image: docker.io/crowdsecurity/crowdsec:v1.7.6
     restart: unless-stopped
     environment:
-      - COLLECTIONS=crowdsecurity/traefik crowdsecurity/appsec-virtual-patching crowdsecurity/appsec-generic-rules
+      - COLLECTIONS=crowdsecurity/traefik crowdsecurity/appsec-virtual-patching crowdsecurity/appsec-generic-rules crowdsecurity/base-http-scenarios crowdsecurity/http-cve crowdsecurity/http-dos
     volumes:
       - crowdsec_config:/etc/crowdsec
       - ./crowdsec/acquis.d:/etc/crowdsec/acquis.d:ro
