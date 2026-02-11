@@ -46,7 +46,7 @@ services:
       PENPOT_DATABASE_URI: postgresql://penpot_postgres/${PENPOT_PG_DB}
       PENPOT_DATABASE_USERNAME: ${PENPOT_PG_USER}
       PENPOT_DATABASE_PASSWORD: ${PENPOT_PG_PASS}
-      PENPOT_REDIS_URI: redis://penpot_valkey/0
+      PENPOT_REDIS_URI: redis://:${PENPOT_REDIS_PASS}@penpot_valkey/0
       PENPOT_ASSETS_STORAGE_BACKEND: assets-fs
       PENPOT_STORAGE_ASSETS_FS_DIRECTORY: /opt/data/assets
       PENPOT_SMTP_DEFAULT_FROM: Penpot <penpot@${DOMAIN}>
@@ -79,7 +79,7 @@ services:
     environment:
       <<: [*penpot_secret_key]
       PENPOT_PUBLIC_URI: http://penpot_frontend:8080
-      PENPOT_REDIS_URI: redis://penpot_valkey/0
+      PENPOT_REDIS_URI: redis://:${PENPOT_REDIS_PASS}@penpot_valkey/0
     networks:
       penpot_net:
         aliases:
@@ -111,13 +111,13 @@ services:
     image: docker.io/valkey/valkey:8.1
     restart: unless-stopped
     environment:
-      VALKEY_EXTRA_FLAGS: --maxmemory 128mb --maxmemory-policy volatile-lfu
+      VALKEY_EXTRA_FLAGS: --requirepass ${PENPOT_REDIS_PASS} --maxmemory 128mb --maxmemory-policy volatile-lfu
     networks:
       - penpot_net
     healthcheck:
       test:
         - CMD-SHELL
-        - valkey-cli ping | grep PONG
+        - valkey-cli -a ${PENPOT_REDIS_PASS} ping | grep PONG
       interval: 1s
       timeout: 3s
       retries: 5
