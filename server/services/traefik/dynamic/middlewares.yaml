@@ -29,4 +29,4 @@ http:
           crowdsecAppsecUnreachableBlock: true
           crowdsecAppsecBodyLimit: 367001600  # 350 MiB - matches Penpot's max multipart upload size
           crowdsecLapiHost: crowdsec:8080
-          crowdsecLapiKey: {{ env "TRAEFIK_CROWDSEC_LAPI_KEY" }}
+          crowdsecLapiKey: {{ env "CROWDSEC_LAPI_KEY" }}
