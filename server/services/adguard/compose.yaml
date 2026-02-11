@@ -16,6 +16,7 @@ services:
       - traefik.enable=true
       - traefik.http.routers.adguard.entrypoints=websecure
       - traefik.http.routers.adguard.rule=Host(`adguard.internal.${DOMAIN}`)
+      - traefik.http.routers.adguard.middlewares=authentik_auth@file
       - traefik.http.services.adguard.loadbalancer.server.port=80
 
 volumes:
