@@ -68,12 +68,14 @@ services:
       - --entrypoints.web.http.redirections.entryPoint.to=websecure
       - --entrypoints.web.http.redirections.entryPoint.scheme=https
       - --entrypoints.web.http.redirections.entrypoint.permanent=true
+      - --entrypoints.websecure.http.middlewares=crowdsec@file
       # === Entry Points: websecure (internal https) ===
       - --entrypoints.websecure.address=:443
       - --entrypoints.websecure.http.tls=true
       - --entrypoints.websecure.http.tls.certresolver=le
       - --entrypoints.websecure.http.tls.domains[0].main=${DOMAIN}
       - --entrypoints.websecure.http.tls.domains[0].sans=*.${DOMAIN},*.internal.${DOMAIN}
+      - --entrypoints.websecure.http.middlewares=crowdsec@file
       # === Entry Points: web_public (external http via VPN) ===
       - --entrypoints.web_public.address=:8080
       - --entrypoints.web_public.proxyProtocol.trustedIPs=10.13.13.0/24
