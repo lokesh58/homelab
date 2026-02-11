@@ -4,6 +4,10 @@ services:
     restart: unless-stopped
     environment:
       API_TOKEN: ${CODERUNNER_API_TOKEN}
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     networks:
       - code_runner_net
       - code_runner_ingress
@@ -13,6 +17,14 @@ services:
       - traefik.http.routers.code_runner.entrypoints=websecure
       - traefik.http.routers.code_runner.rule=Host(`code-runner.${DOMAIN}`)
       - traefik.http.services.code_runner.loadbalancer.server.port=8080
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
 networks:
   code_runner_net:
