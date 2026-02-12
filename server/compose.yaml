@@ -8,9 +8,9 @@ include:
 
   # Open source applications
   - services/ollama/compose.yaml
-  - services/open-webui/compose.yaml
+  - services/open_webui/compose.yaml
   - services/penpot/compose.yaml
 
   # Self developed applications
-  - services/code-runner/compose.yaml
+  - services/code_runner/compose.yaml
   - services/lichobi/compose.yaml
