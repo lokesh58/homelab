@@ -74,7 +74,9 @@ services:
       - --entrypoints.websecure.http.tls=true
       - --entrypoints.websecure.http.tls.certresolver=le
       - --entrypoints.websecure.http.tls.domains[0].main=${DOMAIN}
-      - --entrypoints.websecure.http.tls.domains[0].sans=*.${DOMAIN},*.internal.${DOMAIN}
+      - --entrypoints.websecure.http.tls.domains[0].sans=*.${DOMAIN}
+      - --entrypoints.websecure.http.tls.domains[1].main=internal.${DOMAIN}
+      - --entrypoints.websecure.http.tls.domains[1].sans=*.internal.${DOMAIN}
       - --entrypoints.websecure.http.middlewares=crowdsec@file
       # === Entry Points: web_public (external http via VPN) ===
       - --entrypoints.web_public.address=:8080
