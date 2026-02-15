@@ -10,6 +10,7 @@ include:
   - services/ollama/compose.yaml
   - services/open_webui/compose.yaml
   - services/penpot/compose.yaml
+  - services/vaultwarden/compose.yaml
 
   # Self developed applications
   - services/code_runner/compose.yaml
