@@ -19,6 +19,7 @@ services:
       INVITATION_ORG_NAME: Vaultwarden
       ORG_EVENTS_ENABLED: true
       EVENTS_DAYS_RETAIN: 365
+      ORG_CREATION_USERS: ${VAULTWARDEN_ORG_CREATION_USERS}
       EXPERIMENTAL_CLIENT_FEATURE_FLAGS: inline-menu-positioning-improvements,inline-menu-totp,ssh-agent,ssh-key-vault-item,pm-25373-windows-biometrics-v2,export-attachments
       ADMIN_TOKEN: ${VAULTWARDEN_ADMIN_TOKEN}
       SMTP_HOST: ${SMTP_HOST}
