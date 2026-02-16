@@ -36,7 +36,7 @@ services:
       - traefik.enable=true
       # Main Router (Public/App access)
       - traefik.http.routers.vaultwarden.entrypoints=websecure,websecure_public
-      - traefik.http.routers.vaultwarden.rule=Host(`vw.${DOMAIN}`)
+      - traefik.http.routers.vaultwarden.rule=Host(`vw.${DOMAIN}`) && !PathPrefix(`/admin`)
       - traefik.http.routers.vaultwarden.service=vaultwarden
       # Admin Router (Protected by Authentik)
       - traefik.http.routers.vaultwarden-admin.entrypoints=websecure
