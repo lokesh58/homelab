@@ -7,7 +7,7 @@ services:
     environment:
       WEBSOCKET_ENABLED: true
       PUSH_ENABLED: true
-      PUSH_RELAY_BASE_URI: https://api.bitwarden.eu
+      PUSH_RELAY_URI: https://api.bitwarden.eu
       PUSH_IDENTITY_URI: https://identity.bitwarden.eu
       PUSH_INSTALLATION_ID: ${VAULTWARDEN_PUSH_INSTALLATION_ID}
       PUSH_INSTALLATION_KEY: ${VAULTWARDEN_PUSH_INSTALLATION_KEY}
