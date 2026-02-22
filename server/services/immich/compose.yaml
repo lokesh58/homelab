@@ -25,7 +25,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.immich.entrypoints=websecure,websecure_public
-      - traefik.http.routers.immich.rule=Host(`photos.${DOMAIN}`)
+      - traefik.http.routers.immich.rule=Host(`immich.${DOMAIN}`)
       - traefik.http.services.immich.loadbalancer.server.port=2283
     deploy:
       resources:
