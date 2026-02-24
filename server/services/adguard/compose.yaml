@@ -3,8 +3,8 @@ services:
     image: docker.io/adguard/adguardhome:v0.107.71
     restart: unless-stopped
     ports:
-      - ${SERVER_LAN_IP}:53:53/tcp
-      - ${SERVER_LAN_IP}:53:53/udp
+      - 53:53/tcp
+      - 53:53/udp
       # - 3000:3000/tcp # uncomment for initial setup
     volumes:
       - adguard_data:/opt/adguardhome/work

@@ -119,8 +119,8 @@ services:
       - --experimental.plugins.crowdsec_bouncer_traefik_plugin.moduleName=github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin
       - --experimental.plugins.crowdsec_bouncer_traefik_plugin.version=v1.4.6
     ports:
-      - ${SERVER_LAN_IP}:80:80/tcp
-      - ${SERVER_LAN_IP}:443:443/tcp
+      - 80:80/tcp
+      - 443:443/tcp
     environment:
       CF_DNS_API_TOKEN: ${TRAEFIK_CF_DNS_API_TOKEN}
       CROWDSEC_LAPI_KEY: ${TRAEFIK_CROWDSEC_LAPI_KEY}
