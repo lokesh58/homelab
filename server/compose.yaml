@@ -8,6 +8,7 @@ include:
 
   # Open source applications
   - services/immich/compose.yaml
+  - services/nextcloud/compose.yaml
   - services/ollama/compose.yaml
   - services/open_webui/compose.yaml
   - services/penpot/compose.yaml
