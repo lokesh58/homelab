@@ -129,9 +129,10 @@ services:
       - letsencrypt:/letsencrypt
       - traefik_logs:/var/log/traefik
     networks:
-      - traefik_net
-      - traefik_proxy
-      - docker_socket_proxy_ingress
+      traefik_net:
+      traefik_proxy:
+        ipv4_address: 192.168.32.254
+      docker_socket_proxy_ingress:
     labels:
       - traefik.enable=true
       - traefik.http.routers.traefik_dashboard.entrypoints=websecure
@@ -163,6 +164,9 @@ networks:
   traefik_proxy:
     name: traefik_proxy
     internal: true
+    ipam:
+      config:
+        - subnet: 192.168.32.0/20
 
 volumes:
   wireguard_config:
