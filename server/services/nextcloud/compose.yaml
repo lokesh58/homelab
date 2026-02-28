@@ -29,6 +29,9 @@ services:
       # Proxy settings
       APACHE_DISABLE_REWRITE_IP: 1
       TRUSTED_PROXIES: traefik
+      OVERWRITEPROTOCOL: https
+      OVERWRITEHOST: nextcloud.${DOMAIN}
+      OVERWRITECLIURL: https://nextcloud.${DOMAIN}
       # File Limits (Aligns with Traefik/AppSec body limit)
       PHP_UPLOAD_LIMIT: ${MAX_BODY_SIZE_MB}
       PHP_MEMORY_LIMIT: 512M
@@ -93,3 +96,4 @@ volumes:
 networks:
   nextcloud_net:
     internal: false
+
