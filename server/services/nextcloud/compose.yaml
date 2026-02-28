@@ -93,4 +93,3 @@ volumes:
 networks:
   nextcloud_net:
     internal: false
-
