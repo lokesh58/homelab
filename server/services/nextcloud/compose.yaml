@@ -1,6 +1,6 @@
 services:
   nextcloud:
-    image: docker.io/library/nextcloud:31-apache
+    image: docker.io/library/nextcloud:31.0.14-apache
     restart: unless-stopped
     depends_on:
       nextcloud_postgres:
@@ -16,17 +16,23 @@ services:
       # Redis
       REDIS_HOST: nextcloud_redis
       REDIS_HOST_PASSWORD: ${NEXTCLOUD_REDIS_PASSWORD}
-      # Nextcloud Admin
-      NEXTCLOUD_ADMIN_USER: ${NEXTCLOUD_ADMIN_USER}
-      NEXTCLOUD_ADMIN_PASSWORD: ${NEXTCLOUD_ADMIN_PASSWORD}
-      # Trusted Domains
+      # SMTP
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_NAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_SECURE: ${SMTP_SECURE_STRING}
+      MAIL_FROM_ADDRESS: nextcloud
+      MAIL_DOMAIN: ${DOMAIN}
+      # Nextcloud
       NEXTCLOUD_TRUSTED_DOMAINS: nextcloud.${DOMAIN}
-      # Overwrite settings for reverse proxy
-      OVERWRITEPROTOCOL: https
-      OVERWRITEHOST: nextcloud.${DOMAIN}
+      # Proxy settings
+      APACHE_DISABLE_REWRITE_IP: 1
       TRUSTED_PROXIES: traefik
-      # Data directory location
-      NEXTCLOUD_DATA_DIR: /var/www/html/data
+      # File Limits (Aligns with Traefik/AppSec body limit)
+      PHP_UPLOAD_LIMIT: ${MAX_BODY_SIZE_MB}
+      PHP_MEMORY_LIMIT: 512M
+      APACHE_BODY_LIMIT: ${MAX_BODY_SIZE_BYTES}
     volumes:
       - nextcloud_app:/var/www/html
       - ${NEXTCLOUD_STORAGE_LOCATION}:/var/www/html/data

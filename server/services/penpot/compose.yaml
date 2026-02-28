@@ -7,8 +7,8 @@ x-penpot_public_uri: &penpot_public_uri
 x-penpot_http_body_size: &penpot_http_body_size
   # Max body size (30MiB); Used for plain requests, should never be greater than multi-part size
   PENPOT_HTTP_SERVER_MAX_BODY_SIZE: 31457280
-  # Max multipart body size (350MiB)
-  PENPOT_HTTP_SERVER_MAX_MULTIPART_BODY_SIZE: 367001600
+  # Max multipart body size
+  PENPOT_HTTP_SERVER_MAX_MULTIPART_BODY_SIZE: ${MAX_BODY_SIZE_BYTES}
 
 x-penpot_secret_key: &penpot_secret_key
   PENPOT_SECRET_KEY: ${PENPOT_SECRET_KEY}
