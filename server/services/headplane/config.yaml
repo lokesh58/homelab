@@ -1,0 +1,51 @@
+# Headplane Configuration
+# Documentation: https://headplane.net
+#
+# IMPORTANT: Replace all <PLACEHOLDER> values before starting!
+
+server:
+  host: "0.0.0.0"
+  port: 3000
+
+  # Base URL for Headplane (without /admin path)
+  # Replace <DOMAIN> with your actual domain
+  base_url: "https://headplane.internal.<DOMAIN>"
+
+  # Session cookie secret (must be 32 characters)
+  # Generate with: openssl rand -hex 16
+  cookie_secret: "<32_CHARACTER_SECRET>"
+  cookie_secure: true
+  cookie_max_age: 86400  # 1 day
+
+  # Persistent data path
+  data_path: "/var/lib/headplane"
+
+# Headscale connection settings
+headscale:
+  # Connect to Headscale on VPS via Tailscale network
+  # Replace <VPS_TAILSCALE_IP> with your VPS's Tailscale IP after registration
+  url: "http://<VPS_TAILSCALE_IP>:8080"
+
+  # Optional: Public URL for display in UI
+  # Replace <DOMAIN> with your actual domain
+  public_url: "https://vpn.<DOMAIN>"
+
+# Integration settings
+# Since Headscale is on a separate VPS, we use API-only mode
+integration:
+  # Agent disabled (Headscale is on separate VPS)
+  agent:
+    enabled: false
+
+  # Docker integration disabled
+  docker:
+    enabled: false
+
+  # Kubernetes integration disabled
+  kubernetes:
+    enabled: false
+
+  # Proc integration disabled
+  proc:
+    enabled: false
+

@@ -1,0 +1,120 @@
+# Headscale Configuration
+# Documentation: https://headscale.net/stable/ref/configuration/
+#
+# Environment variable overrides supported with HEADSCALE_ prefix.
+# Example: HEADSCALE_SERVER_URL overrides server_url
+#
+# Required env vars (set in compose.yaml or .env):
+#   - HEADSCALE_SERVER_URL
+#   - HEADSCALE_DNS_BASE_DOMAIN
+#   - HEADSCALE_OIDC_CLIENT_ID
+#   - HEADSCALE_DERP_SERVER_IPV4
+#
+# Required files:
+#   - /run/secrets/oidc_client_secret (Google OAuth client secret)
+#
+# Post-deployment configuration:
+#   - Update extra_records with homelab Tailscale IP
+
+# Server URL - OVERRIDE WITH ENV: HEADSCALE_SERVER_URL
+server_url: https://vpn.example.com
+
+# Listen address for the Headscale server
+listen_addr: 0.0.0.0:8080
+
+# gRPC settings (for CLI communication)
+grpc_listen_addr: 0.0.0.0:50443
+grpc_allow_insecure: false
+
+# Database configuration
+database:
+  type: sqlite
+  sqlite:
+    path: /var/lib/headscale/db.sqlite
+    write_ahead_log: true
+
+# Disable TLS - Caddy handles TLS termination
+tls_cert_path: ""
+tls_key_path: ""
+
+# IP Prefixes for the Tailscale network
+prefixes:
+  v4: 100.64.0.0/10
+  v6: fd7a:115c:a1e0::/48
+  allocation: sequential
+
+# DERP configuration - Embedded relay server
+# Provides relay for clients that can't establish direct connections
+derp:
+  server:
+    # Enable embedded DERP relay
+    enabled: true
+    region_id: 999
+    region_code: "homelab"
+    region_name: "Homelab DERP"
+    # Only allow authenticated clients
+    verify_clients: true
+    # STUN for NAT traversal - OVERRIDE WITH ENV: HEADSCALE_DERP_SERVER_STUN_LISTEN_ADDR
+    stun_listen_addr: "0.0.0.0:3478"
+    # VPS public IP - OVERRIDE WITH ENV: HEADSCALE_DERP_SERVER_IPV4
+    ipv4: 0.0.0.0
+    automatically_add_embedded_derp_region: true
+  # Also use Tailscale's public DERP servers as fallback
+  urls:
+    - https://controlplane.tailscale.com/derpmap/default
+  auto_update_enabled: true
+  update_frequency: 24h
+
+# Disable automatic check for updates
+disable_check_updates: true
+
+# Ephemeral node inactivity timeout
+ephemeral_node_inactivity_timeout: 30m
+
+# Node key expiry - DISABLED
+# Once registered, nodes stay connected forever until manually removed
+node_key_expiry_disabled: true
+
+# DNS configuration
+dns:
+  magic_dns: true
+  # Base domain for MagicDNS - OVERRIDE WITH ENV: HEADSCALE_DNS_BASE_DOMAIN
+  base_domain: ts.example.com
+  nameservers:
+    global:
+      - 1.1.1.1
+      - 8.8.8.8
+  # Extra DNS records - resolve *.domain.com to homelab's Tailscale IP
+  # NOTE: Update this after homelab is registered with its Tailscale IP
+  extra_records: []
+  #  - name: "*.example.com"
+  #    type: A
+  #    value: "100.64.0.1"
+
+# Log settings
+log:
+  level: info
+  format: text
+
+# Unix socket for CLI
+unix_socket: /var/run/headscale/headscale.sock
+unix_socket_permission: "0770"
+
+# ACL Policy - loaded from file (read-only for security)
+policy:
+  mode: file
+  path: /etc/headscale/acl.yaml
+
+# OIDC Configuration - Google
+# Create OAuth credentials at: https://console.cloud.google.com/apis/credentials
+# Authorized redirect URI: https://vpn.<YOUR_DOMAIN>/oidc/callback
+oidc:
+  issuer: "https://accounts.google.com"
+  # OVERRIDE WITH ENV: HEADSCALE_OIDC_CLIENT_ID
+  client_id: "placeholder"
+  # Client secret loaded from Docker secret
+  client_secret_path: /run/secrets/oidc_client_secret
+  # OVERRIDE WITH ENV: HEADSCALE_OIDC_ALLOWED_DOMAINS (comma-separated? or use allowed_users)
+  # For single user, use allowed_users instead
+  allowed_users: []
+  allowed_domains: []

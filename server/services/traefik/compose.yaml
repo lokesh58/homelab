@@ -36,26 +36,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - docker_socket_proxy_net
-      - docker_socket_proxy_ingress
-
-  wireguard:
-    image: docker.io/linuxserver/wireguard:1.0.20250521
-    restart: unless-stopped
-    depends_on:
-      - traefik
-    cap_add:
-      - NET_ADMIN
-      # - SYS_MODULE # optional: Necessary for loading Wireguard kernel module if it's not already loaded.
-    sysctls:
-      - net.ipv4.conf.all.src_valid_mark=1
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=UTC
-    volumes:
-      - wireguard_config:/config
-      # - /lib/modules:/lib/modules # optional: Path to host kernel module for situations where it's not already loaded.
-    network_mode: service:traefik
 
   traefik:
     image: docker.io/library/traefik:3.6
@@ -63,12 +43,12 @@ services:
     depends_on:
       - docker_socket_proxy
     command:
-      # === Entry Points: web (internal http) ===
+      # === Entry Points: web (http redirect) ===
       - --entrypoints.web.address=:80
       - --entrypoints.web.http.redirections.entryPoint.to=websecure
       - --entrypoints.web.http.redirections.entryPoint.scheme=https
       - --entrypoints.web.http.redirections.entrypoint.permanent=true
-      # === Entry Points: websecure (internal https) ===
+      # === Entry Points: websecure (https) ===
       - --entrypoints.websecure.address=:443
       - --entrypoints.websecure.http.tls=true
       - --entrypoints.websecure.http.tls.certresolver=le
@@ -76,24 +56,9 @@ services:
       - --entrypoints.websecure.http.tls.domains[0].sans=*.${DOMAIN}
       - --entrypoints.websecure.http.tls.domains[1].main=*.internal.${DOMAIN}
       - --entrypoints.websecure.http.middlewares=crowdsec@file
-      # === Entry Points: web_public (external http via VPN) ===
-      - --entrypoints.web_public.address=:8080
-      - --entrypoints.web_public.proxyProtocol.trustedIPs=10.13.13.0/24
-      - --entrypoints.web_public.http.redirections.entryPoint.to=websecure_public
-      - --entrypoints.web_public.http.redirections.entryPoint.scheme=https
-      - --entrypoints.web_public.http.redirections.entrypoint.permanent=true
-      # === Entry Points: websecure_public (external https via VPN) ===
-      - --entrypoints.websecure_public.address=:8443
-      - --entrypoints.websecure_public.proxyProtocol.trustedIPs=10.13.13.0/24
-      - --entrypoints.websecure_public.http.tls=true
-      - --entrypoints.websecure_public.http.tls.certresolver=le
-      - --entrypoints.websecure_public.http.tls.domains[0].main=${DOMAIN}
-      - --entrypoints.websecure_public.http.tls.domains[0].sans=*.${DOMAIN}
-      - --entrypoints.websecure_public.http.middlewares=crowdsec@file
       # === Certificate Resolver: LetsEncrypt ===
       - --certificatesresolvers.le.acme.dnschallenge=true
       - --certificatesresolvers.le.acme.dnschallenge.provider=cloudflare
-      - --certificatesresolvers.le.acme.dnschallenge.resolvers=1.1.1.1:53,1.0.0.1:53
       - --certificatesresolvers.le.acme.email=${TRAEFIK_LE_EMAIL}
       - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
       - --certificatesresolvers.le.acme.caserver=https://acme-v02.api.letsencrypt.org/directory
@@ -108,6 +73,10 @@ services:
       # === API & Dashboard ===
       - --api.dashboard=true
       - --api.insecure=false
+      # === Metrics (Prometheus) ===
+      - --metrics.prometheus=true
+      - --metrics.prometheus.entryPoint=metrics
+      - --entrypoints.metrics.address=:8082
       # === Logging ===
       - --log.level=INFO
       # === Access Logs (for CrowdSec) ===
@@ -132,7 +101,7 @@ services:
       traefik_net:
       traefik_proxy:
         ipv4_address: 192.168.32.254
-      docker_socket_proxy_ingress:
+      docker_socket_proxy_net:
     labels:
       - traefik.enable=true
       - traefik.http.routers.traefik_dashboard.entrypoints=websecure
@@ -157,8 +126,6 @@ services:
 networks:
   docker_socket_proxy_net:
     internal: true
-  docker_socket_proxy_ingress:
-    internal: true
   traefik_net:
     internal: false
   traefik_proxy:
@@ -169,7 +136,6 @@ networks:
         - subnet: 192.168.32.0/20
 
 volumes:
-  wireguard_config:
   letsencrypt:
   traefik_logs:
   crowdsec_config:

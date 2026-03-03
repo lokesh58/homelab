@@ -1,46 +1,58 @@
 name: homelab_gateway
 
 services:
-  wireguard:
-    image: docker.io/linuxserver/wireguard:1.0.20250521
+  # === Headscale Control Plane ===
+  caddy:
+    image: ghcr.io/caddybuilds/caddy-cloudflare:2.11.1
     restart: unless-stopped
-    cap_add:
-      - NET_ADMIN
-      # - SYS_MODULE # optional: Necessary for loading Wireguard kernel module if it's not already loaded.
-    sysctls:
-      - net.ipv4.conf.all.src_valid_mark=1
     environment:
-      - PUID=${WIREGUARD_UID}
-      - PGID=${WIREGUARD_GID}
-      - TZ=UTC
-      - SERVERURL=auto
-      - SERVERPORT=51820
-      - PEERS=homelab
-      - INTERNAL_SUBNET=10.13.13.0
-      - ALLOWEDIPS=10.13.13.0/24
+      - CLOUDFLARE_API_TOKEN=${CF_DNS_API_TOKEN}
+      - DOMAIN=${DOMAIN}
     volumes:
-      - wireguard_config:/config
-      - ./wireguard/templates:/config/templates:ro
-      # - /lib/modules:/lib/modules:ro # optional: Path to host kernel module for situations where it's not already loaded.
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      - caddy_logs:/var/log/caddy
     ports:
-      - 51820:51820/udp
-      - 80:80    # used by nginx
-      - 443:443  # used by nginx
+      - 80:80
+      - 443:443
+      # Metrics endpoint for Prometheus (accessible via Tailscale only)
+      # The VPS host firewall should block public access to port 2019
+      - 2019:2019
+    networks:
+      - headscale_net
 
-  nginx:
-    image: docker.io/library/nginx:1.28-alpine
+  headscale:
+    image: docker.io/headscale/headscale:0.28.0
     restart: unless-stopped
-    depends_on:
-      - wireguard
+    command: serve
+    environment:
+      # Override config.yaml values with environment variables
+      - HEADSCALE_SERVER_URL=https://vpn.${DOMAIN}
+      - HEADSCALE_DNS_BASE_DOMAIN=ts.${DOMAIN}
+      - HEADSCALE_OIDC_CLIENT_ID=${HEADSCALE_OIDC_CLIENT_ID}
+      - HEADSCALE_OIDC_ALLOWED_USERS=${HEADSCALE_OIDC_ALLOWED_USERS}
+      # VPS public IP for embedded DERP relay
+      - HEADSCALE_DERP_SERVER_IPV4=${VPS_PUBLIC_IP}
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-    network_mode: service:wireguard
+      - ./headscale/config.yaml:/etc/headscale/config.yaml:ro
+      - ./headscale/acl.yaml:/etc/headscale/acl.yaml:ro
+      - headscale_data:/var/lib/headscale
+      - headscale_run:/var/run/headscale
+    secrets:
+      - oidc_client_secret
+    ports:
+      # STUN port for NAT traversal (embedded DERP)
+      - 3478:3478/udp
+    networks:
+      - headscale_net
 
+  # === Security (SSH + HTTP protection) ===
   crowdsec:
     image: docker.io/crowdsecurity/crowdsec:v1.7.6
     restart: unless-stopped
     environment:
-      - COLLECTIONS=crowdsecurity/linux crowdsecurity/sshd
+      - COLLECTIONS=crowdsecurity/linux crowdsecurity/sshd crowdsecurity/caddy crowdsecurity/base-http-scenarios crowdsecurity/http-cve
     volumes:
       - crowdsec_config:/etc/crowdsec
       - ./crowdsec/acquis.d:/etc/crowdsec/acquis.d:ro
@@ -48,10 +60,22 @@ services:
       - crowdsec_db:/var/lib/crowdsec/data
       - /var/log/auth.log:/var/log/auth.log:ro
       - /var/log/syslog:/var/log/syslog:ro
+      - caddy_logs:/var/log/caddy:ro
     ports:
       - 127.0.0.1:8080:8080
 
+secrets:
+  oidc_client_secret:
+    file: ./secrets/oidc_client_secret
+
+networks:
+  headscale_net:
+
 volumes:
-  wireguard_config:
+  caddy_data:
+  caddy_config:
+  caddy_logs:
+  headscale_data:
+  headscale_run:
   crowdsec_config:
   crowdsec_db:

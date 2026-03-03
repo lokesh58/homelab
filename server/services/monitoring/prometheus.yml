@@ -1,0 +1,21 @@
+# Prometheus Configuration
+# Scrapes metrics from Traefik (local) and Caddy (VPS via Tailscale)
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Traefik metrics (local)
+  - job_name: 'traefik'
+    static_configs:
+      - targets: ['traefik:8082']
+    metrics_path: /metrics
+
+  # Caddy metrics (VPS via Tailscale)
+  # Replace <VPS_TAILSCALE_IP> with actual IP after VPS is registered
+  - job_name: 'caddy'
+    static_configs:
+      - targets: ['<VPS_TAILSCALE_IP>:2019']
+    metrics_path: /metrics
+

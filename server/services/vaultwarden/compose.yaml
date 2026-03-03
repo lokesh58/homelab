@@ -34,8 +34,8 @@ services:
       - traefik_proxy
     labels:
       - traefik.enable=true
-      # Main Router (Public/App access)
-      - traefik.http.routers.vaultwarden.entrypoints=websecure,websecure_public
+      # Main Router (App access)
+      - traefik.http.routers.vaultwarden.entrypoints=websecure
       - traefik.http.routers.vaultwarden.rule=Host(`vw.${DOMAIN}`) && !PathPrefix(`/admin`)
       - traefik.http.routers.vaultwarden.service=vaultwarden
       # Admin Router (Protected by Authentik)

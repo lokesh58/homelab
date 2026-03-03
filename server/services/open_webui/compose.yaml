@@ -27,7 +27,7 @@ services:
       - traefik_proxy
     labels:
       - traefik.enable=true
-      - traefik.http.routers.open_webui.entrypoints=websecure,websecure_public
+      - traefik.http.routers.open_webui.entrypoints=websecure
       - traefik.http.routers.open_webui.rule=Host(`openwebui.${DOMAIN}`)
       - traefik.http.services.open_webui.loadbalancer.server.port=8080
     deploy:
