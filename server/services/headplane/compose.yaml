@@ -1,6 +1,6 @@
 services:
   headplane:
-    image: ghcr.io/tale/headplane:latest
+    image: ghcr.io/tale/headplane:v0.6.2
     restart: unless-stopped
     volumes:
       - ./config.yaml:/etc/headplane/config.yaml:ro
@@ -14,10 +14,5 @@ services:
       - traefik.http.routers.headplane.middlewares=authentik_auth@file
       - traefik.http.services.headplane.loadbalancer.server.port=3000
 
-networks:
-  traefik_proxy:
-    external: true
-
 volumes:
   headplane_data:
-

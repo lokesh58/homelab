@@ -1,5 +1,12 @@
 .env
+
+# Headscale extra DNS records (contains domain name)
 gateway/headscale/extra_records.json
+
+# Headplane config (contains domain name and secrets)
+server/services/headplane/config.yaml
+
+# All secrets except examples
 gateway/secrets/*
 !gateway/secrets/*.example
 server/secrets/*

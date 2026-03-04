@@ -26,6 +26,11 @@ headscale:
   # Replace <VPS_TAILSCALE_IP> with your VPS's Tailscale IP after registration
   url: "http://<VPS_TAILSCALE_IP>:8080"
 
+  # API key for authenticating with Headscale
+  # Generate on VPS with: docker compose exec headscale headscale apikeys create
+  # Replace <HEADSCALE_API_KEY> with the generated key
+  api_key: "<HEADSCALE_API_KEY>"
+
   # Optional: Public URL for display in UI
   # Replace <DOMAIN> with your actual domain
   public_url: "https://vpn.<DOMAIN>"
@@ -48,4 +53,3 @@ integration:
   # Proc integration disabled
   proc:
     enabled: false
-

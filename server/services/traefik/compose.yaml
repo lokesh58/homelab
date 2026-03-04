@@ -128,6 +128,8 @@ networks:
     internal: true
   traefik_net:
     internal: false
+  traefik_ingress:
+    internal: true
   traefik_proxy:
     name: traefik_proxy
     internal: true
