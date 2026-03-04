@@ -1,1 +1,6 @@
 .env
+gateway/headscale/extra_records.json
+gateway/secrets/*
+!gateway/secrets/*.example
+server/secrets/*
+!server/secrets/*.example

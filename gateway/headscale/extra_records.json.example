@@ -1,0 +1,12 @@
+[
+  {
+    "name": "yourdomain.com",
+    "type": "A",
+    "value": "100.64.0.1"
+  },
+  {
+    "name": "*.yourdomain.com",
+    "type": "A",
+    "value": "100.64.0.1"
+  }
+]

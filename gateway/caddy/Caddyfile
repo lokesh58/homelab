@@ -1,19 +1,14 @@
-# Global settings
 {
-	# Enable Prometheus metrics
 	servers {
 		metrics
 	}
 }
 
-# Wildcard certificate for {DOMAIN} and *.{DOMAIN}
-# Using DNS-01 challenge to avoid exposing subdomains in CT logs
 {$DOMAIN}, *.{$DOMAIN} {
 	tls {
 		dns cloudflare {env.CLOUDFLARE_API_TOKEN}
 	}
 
-	# Access logs for CrowdSec monitoring
 	log {
 		output file /var/log/caddy/access.log {
 			roll_size 10mb
@@ -22,13 +17,11 @@
 		format json
 	}
 
-	# Only respond to vpn.{DOMAIN}, return 404 for everything else
 	@vpn host vpn.{$DOMAIN}
 	handle @vpn {
 		reverse_proxy headscale:8080
 	}
 
-	# Catch-all: return 404 for any other subdomain
 	handle {
 		respond "Not Found" 404
 	}

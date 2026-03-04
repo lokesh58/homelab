@@ -1,20 +1,5 @@
-# Headscale Configuration
-# Documentation: https://headscale.net/stable/ref/configuration/
-#
-# Environment variable overrides supported with HEADSCALE_ prefix.
-# Example: HEADSCALE_SERVER_URL overrides server_url
-#
-# Required env vars (set in compose.yaml or .env):
-#   - HEADSCALE_SERVER_URL
-#   - HEADSCALE_DNS_BASE_DOMAIN
-#   - HEADSCALE_OIDC_CLIENT_ID
-#   - HEADSCALE_DERP_SERVER_IPV4
-#
 # Required files:
 #   - /run/secrets/oidc_client_secret (Google OAuth client secret)
-#
-# Post-deployment configuration:
-#   - Update extra_records with homelab Tailscale IP
 
 # Server URL - OVERRIDE WITH ENV: HEADSCALE_SERVER_URL
 server_url: https://vpn.example.com
@@ -77,19 +62,28 @@ node_key_expiry_disabled: true
 
 # DNS configuration
 dns:
-  magic_dns: true
-  # Base domain for MagicDNS - OVERRIDE WITH ENV: HEADSCALE_DNS_BASE_DOMAIN
-  base_domain: ts.example.com
-  nameservers:
-    global:
-      - 1.1.1.1
-      - 8.8.8.8
-  # Extra DNS records - resolve *.domain.com to homelab's Tailscale IP
-  # NOTE: Update this after homelab is registered with its Tailscale IP
-  extra_records: []
-  #  - name: "*.example.com"
-  #    type: A
-  #    value: "100.64.0.1"
+  # MagicDNS disabled - nodes won't get automatic hostname.base_domain DNS names
+  # Only custom extra_records will be provided
+  magic_dns: false
+  # Base domain not needed when magic_dns is false
+  # base_domain: ts.example.com
+
+  # Use device's local DNS settings instead of overriding them
+  # Headscale will still provide extra_records for split DNS
+  override_local_dns: false
+
+  # Nameservers not needed when override_local_dns is false
+  # Devices will use their own DNS settings
+  # nameservers:
+  #   global:
+  #     - 1.1.1.1
+  #     - 8.8.8.8
+
+  # Extra DNS records - loaded from external file (not in git)
+  # Create /var/lib/headscale/extra_records.json with your domain
+  # This file is mounted from the host and not committed to git
+  # Format: [{"name": "*.yourdomain.com", "type": "A", "value": "100.64.0.1"}]
+  extra_records_path: /var/lib/headscale/extra_records.json
 
 # Log settings
 log:
@@ -100,10 +94,13 @@ log:
 unix_socket: /var/run/headscale/headscale.sock
 unix_socket_permission: "0770"
 
-# ACL Policy - loaded from file (read-only for security)
+# ACL Policy - DISABLED
+# When no policy is configured, Headscale allows all traffic by default
+# This is suitable for trusted family/personal networks
+# To enable ACLs later, set mode to "file" and provide a path
 policy:
-  mode: file
-  path: /etc/headscale/acl.yaml
+  mode: ""
+  path: ""
 
 # OIDC Configuration - Google
 # Create OAuth credentials at: https://console.cloud.google.com/apis/credentials
