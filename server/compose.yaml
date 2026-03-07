@@ -4,7 +4,6 @@ include:
   # Infrastructure services
   - services/authentik/compose.yaml
   - services/traefik/compose.yaml
-  - services/headplane/compose.yaml
   - services/monitoring/compose.yaml
 
   # Open source applications
