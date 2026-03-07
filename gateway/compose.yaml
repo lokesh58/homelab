@@ -40,14 +40,16 @@ services:
   headplane:
     image: ghcr.io/tale/headplane:0.6.2
     restart: unless-stopped
+    depends_on:
+      - headscale
     volumes:
       - ./headplane/config.yaml:/etc/headplane/config.yaml:ro
       - ./headscale/config.yaml:/etc/headscale/config.yaml:ro
       - headplane_data:/var/lib/headplane
     networks:
       - headscale_net
-    depends_on:
-      - headscale
+    ports:
+      - 3000:3000
 
   crowdsec:
     image: docker.io/crowdsecurity/crowdsec:v1.7.6
