@@ -1,3 +1,4 @@
 .env
 gateway/headplane/config.yaml
 gateway/headscale/config.yaml
+server/services/monitoring/prometheus.yaml
