@@ -27,16 +27,8 @@ services:
       - traefik.http.routers.immich.entrypoints=websecure
       - traefik.http.routers.immich.rule=Host(`immich.${DOMAIN}`)
       - traefik.http.services.immich.loadbalancer.server.port=2283
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities:
-                - gpu
-                - compute
-                - video
+    devices:
+      - /dev/dri:/dev/dri # for intel quick sync video encoding
 
   immich_machine_learning:
     image: ghcr.io/immich-app/immich-machine-learning:v2.5.6-cuda
