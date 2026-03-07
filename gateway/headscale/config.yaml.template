@@ -115,6 +115,7 @@ policy:
 # OIDC Configuration - Authentik
 # Authorized redirect URI: https://vpn.${DOMAIN}/oidc/callback
 oidc:
+  only_start_if_oidc_is_available: false
   issuer: "https://auth.${DOMAIN}/application/o/headscale/"
   client_id: "${HEADSCALE_OIDC_CLIENT_ID}"
   client_secret: "${HEADSCALE_OIDC_CLIENT_SECRET}"
