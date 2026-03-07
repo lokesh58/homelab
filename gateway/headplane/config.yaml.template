@@ -22,6 +22,9 @@ headscale:
   # Connect to Headscale locally on the Gateway via Docker network
   url: "http://headscale:8080"
 
+  config_path: "/etc/headscale/config.yaml"
+  config_strict: true
+
   # API key for authenticating with Headscale
   # Generate on Gateway with: docker compose exec headscale headscale apikeys create
   api_key: "${HEADPLANE_HEADSCALE_API_KEY}"
