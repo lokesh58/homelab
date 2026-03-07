@@ -38,16 +38,3 @@ oidc:
   # Generate on Gateway with: docker compose exec headscale headscale apikeys create
   headscale_api_key: "${HEADPLANE_HEADSCALE_API_KEY}"
   disable_api_key_login: true
-
-# Integration settings
-# Since Headplane is now collocated with Headscale, we could enable socket/agent integrations
-# if configured, but keeping API-only mode is perfectly fine and standard for Docker.
-integration:
-  agent:
-    enabled: false
-  docker:
-    enabled: false
-  kubernetes:
-    enabled: false
-  proc:
-    enabled: false
