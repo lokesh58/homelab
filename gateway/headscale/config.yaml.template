@@ -1,8 +1,5 @@
-# Required files:
-#   - /run/secrets/oidc_client_secret (Google OAuth client secret)
-
-# Server URL - OVERRIDE WITH ENV: HEADSCALE_SERVER_URL
-server_url: https://vpn.example.com
+# Server URL
+server_url: https://vpn.${DOMAIN}
 
 # Listen address for the Headscale server
 listen_addr: 0.0.0.0:8080
@@ -10,6 +7,9 @@ listen_addr: 0.0.0.0:8080
 # gRPC settings (for CLI communication)
 grpc_listen_addr: 0.0.0.0:50443
 grpc_allow_insecure: false
+
+# Metrics listen address for Prometheus
+metrics_listen_addr: 0.0.0.0:9090
 
 # Database configuration
 database:
@@ -39,10 +39,10 @@ derp:
     region_name: "Homelab DERP"
     # Only allow authenticated clients
     verify_clients: true
-    # STUN for NAT traversal - OVERRIDE WITH ENV: HEADSCALE_DERP_SERVER_STUN_LISTEN_ADDR
+    # STUN for NAT traversal
     stun_listen_addr: "0.0.0.0:3478"
-    # VPS public IP - OVERRIDE WITH ENV: HEADSCALE_DERP_SERVER_IPV4
-    ipv4: 0.0.0.0
+    # Gateway public IP
+    ipv4: ${GATEWAY_PUBLIC_IP}
     automatically_add_embedded_derp_region: true
   # Also use Tailscale's public DERP servers as fallback
   urls:
@@ -65,25 +65,22 @@ dns:
   # MagicDNS disabled - nodes won't get automatic hostname.base_domain DNS names
   # Only custom extra_records will be provided
   magic_dns: false
-  # Base domain not needed when magic_dns is false
-  # base_domain: ts.example.com
 
   # Use device's local DNS settings instead of overriding them
   # Headscale will still provide extra_records for split DNS
   override_local_dns: false
 
-  # Nameservers not needed when override_local_dns is false
-  # Devices will use their own DNS settings
-  # nameservers:
-  #   global:
-  #     - 1.1.1.1
-  #     - 8.8.8.8
-
-  # Extra DNS records - loaded from external file (not in git)
-  # Create /var/lib/headscale/extra_records.json with your domain
-  # This file is mounted from the host and not committed to git
-  # Format: [{"name": "*.yourdomain.com", "type": "A", "value": "100.64.0.1"}]
-  extra_records_path: /var/lib/headscale/extra_records.json
+  # Extra DNS records
+  extra_records:
+    - name: vpn.${DOMAIN}
+      type: A
+      value: ${GATEWAY_PUBLIC_IP}
+    - name: ${DOMAIN}
+      type: A
+      value: ${SERVER_TAILSCALE_IP}
+    - name: "*.${DOMAIN}"
+      type: A
+      value: ${SERVER_TAILSCALE_IP}
 
 # Log settings
 log:
@@ -102,16 +99,11 @@ policy:
   mode: ""
   path: ""
 
-# OIDC Configuration - Google
-# Create OAuth credentials at: https://console.cloud.google.com/apis/credentials
-# Authorized redirect URI: https://vpn.<YOUR_DOMAIN>/oidc/callback
+# OIDC Configuration - Authentik
+# Authorized redirect URI: https://vpn.${DOMAIN}/oidc/callback
 oidc:
-  issuer: "https://accounts.google.com"
-  # OVERRIDE WITH ENV: HEADSCALE_OIDC_CLIENT_ID
-  client_id: "placeholder"
-  # Client secret loaded from Docker secret
-  client_secret_path: /run/secrets/oidc_client_secret
-  # OVERRIDE WITH ENV: HEADSCALE_OIDC_ALLOWED_DOMAINS (comma-separated? or use allowed_users)
-  # For single user, use allowed_users instead
+  issuer: "https://auth.${DOMAIN}/application/o/headscale/"
+  client_id: "${HEADSCALE_OIDC_CLIENT_ID}"
+  client_secret: "${HEADSCALE_OIDC_CLIENT_SECRET}"
   allowed_users: []
   allowed_domains: []

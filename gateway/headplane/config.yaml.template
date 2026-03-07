@@ -1,0 +1,43 @@
+# Headplane Configuration
+# Documentation: https://headplane.net
+
+server:
+  host: "0.0.0.0"
+  port: 3000
+
+  # Base URL for Headplane (without /admin path)
+  base_url: "https://vpn.internal.${DOMAIN}"
+
+  # Session cookie secret (must be 32 characters)
+  # Generate with: openssl rand -hex 16
+  cookie_secret: "${HEADPLANE_COOKIE_SECRET}"
+  cookie_secure: true
+  cookie_max_age: 86400  # 1 day
+
+  # Persistent data path
+  data_path: "/var/lib/headplane"
+
+# Headscale connection settings
+headscale:
+  # Connect to Headscale locally on the Gateway via Docker network
+  url: "http://headscale:8080"
+
+  # API key for authenticating with Headscale
+  # Generate on Gateway with: docker compose exec headscale headscale apikeys create
+  api_key: "${HEADPLANE_HEADSCALE_API_KEY}"
+
+  # Optional: Public URL for display in UI
+  public_url: "https://vpn.${DOMAIN}"
+
+# Integration settings
+# Since Headplane is now collocated with Headscale, we could enable socket/agent integrations
+# if configured, but keeping API-only mode is perfectly fine and standard for Docker.
+integration:
+  agent:
+    enabled: false
+  docker:
+    enabled: false
+  kubernetes:
+    enabled: false
+  proc:
+    enabled: false

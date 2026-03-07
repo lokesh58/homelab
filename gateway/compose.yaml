@@ -15,7 +15,7 @@ services:
     ports:
       - 80:80
       - 443:443
-      - 2019:2019
+      - 2019:2019 # for caddy metrics
     networks:
       - headscale_net
 
@@ -23,21 +23,31 @@ services:
     image: docker.io/headscale/headscale:0.28.0
     restart: unless-stopped
     command: serve
-    environment:
-      - HEADSCALE_SERVER_URL=https://vpn.${DOMAIN}
-      - HEADSCALE_OIDC_CLIENT_ID=${HEADSCALE_OIDC_CLIENT_ID}
-      - HEADSCALE_OIDC_ALLOWED_USERS=${HEADSCALE_OIDC_ALLOWED_USERS}
-      - HEADSCALE_DERP_SERVER_IPV4=${VPS_PUBLIC_IP}
+    read_only: true
+    tmpfs:
+      - /var/run/headscale
     volumes:
       - ./headscale/config.yaml:/etc/headscale/config.yaml:ro
       - headscale_data:/var/lib/headscale
-      - headscale_run:/var/run/headscale
-    secrets:
-      - oidc_client_secret
+    extra_hosts:
+      - "auth.${DOMAIN}:${SERVER_TAILSCALE_IP}"
     ports:
-      - 3478:3478/udp
+      - 3478:3478/udp # for STUN
+      - 9090:9090 # for metrics
     networks:
       - headscale_net
+
+  headplane:
+    image: ghcr.io/tale/headplane:v0.6.2
+    restart: unless-stopped
+    volumes:
+      - ./headplane/config.yaml:/etc/headplane/config.yaml:ro
+      - ./headscale/config.yaml:/etc/headscale/config.yaml:ro
+      - headplane_data:/var/lib/headplane
+    networks:
+      - headscale_net
+    depends_on:
+      - headscale
 
   crowdsec:
     image: docker.io/crowdsecurity/crowdsec:v1.7.6
@@ -57,10 +67,6 @@ services:
     networks:
       - crowdsec_net
 
-secrets:
-  oidc_client_secret:
-    file: ./secrets/oidc_client_secret
-
 networks:
   headscale_net:
   crowdsec_net:
@@ -70,6 +76,6 @@ volumes:
   caddy_config:
   caddy_logs:
   headscale_data:
-  headscale_run:
+  headplane_data:
   crowdsec_config:
   crowdsec_db:
