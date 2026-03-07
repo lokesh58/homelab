@@ -75,13 +75,22 @@ node_key_expiry_disabled: true
 
 # DNS configuration
 dns:
-  # MagicDNS disabled - nodes won't get automatic hostname.base_domain DNS names
-  # Only custom extra_records will be provided
-  magic_dns: false
+  # MagicDNS is required for clients to receive and resolve extra_records
+  magic_dns: true
+  
+  # Base domain for the Tailnet
+  base_domain: hs.${DOMAIN}
 
-  # Use device's local DNS settings instead of overriding them
-  # Headscale will still provide extra_records for split DNS
+  # We use false here so clients continue using their local DNS (router/ISP)
+  # for regular internet traffic, but Tailscale's 100.100.100.100 will intercept
+  # queries for the base_domain and our extra_records.
   override_local_dns: false
+
+  # Global nameservers (required if override_local_dns was true, but good to have)
+  nameservers:
+    global:
+      - 1.1.1.1
+      - 8.8.8.8
 
   # Extra DNS records
   extra_records:
@@ -123,3 +132,4 @@ oidc:
   email_verified_required: false
   allowed_users: []
   allowed_domains: []
+
