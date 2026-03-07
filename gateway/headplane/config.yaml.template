@@ -25,10 +25,6 @@ headscale:
   config_path: "/etc/headscale/config.yaml"
   config_strict: true
 
-  # API key for authenticating with Headscale
-  # Generate on Gateway with: docker compose exec headscale headscale apikeys create
-  api_key: "${HEADPLANE_HEADSCALE_API_KEY}"
-
   # Optional: Public URL for display in UI
   public_url: "https://vpn.${DOMAIN}"
 
@@ -38,6 +34,9 @@ oidc:
   issuer: "https://auth.${DOMAIN}/application/o/headplane/"
   client_id: "${HEADPLANE_OIDC_CLIENT_ID}"
   client_secret: "${HEADPLANE_OIDC_CLIENT_SECRET}"
+  # API key for authenticating with Headscale
+  # Generate on Gateway with: docker compose exec headscale headscale apikeys create
+  headscale_api_key: "${HEADPLANE_HEADSCALE_API_KEY}"
   disable_api_key_login: true
 
 # Integration settings
