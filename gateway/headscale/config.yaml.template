@@ -4,19 +4,29 @@ server_url: https://vpn.${DOMAIN}
 # Listen address for the Headscale server
 listen_addr: 0.0.0.0:8080
 
+# Metrics listen address for Prometheus
+metrics_listen_addr: 0.0.0.0:9090
+
+# Noise protocol configuration (Tailscale v2)
+noise:
+  private_key_path: /var/lib/headscale/noise_private.key
+
 # gRPC settings (for CLI communication)
 grpc_listen_addr: 0.0.0.0:50443
 grpc_allow_insecure: false
 
-# Metrics listen address for Prometheus
-metrics_listen_addr: 0.0.0.0:9090
-
 # Database configuration
 database:
   type: sqlite
+  gorm:
+    prepare_stmt: true
+    parameterized_queries: true
+    skip_err_record_not_found: true
+    slow_threshold: 1000
   sqlite:
     path: /var/lib/headscale/db.sqlite
     write_ahead_log: true
+    wal_autocheckpoint: 1000
 
 # Disable TLS - Caddy handles TLS termination
 tls_cert_path: ""
@@ -41,14 +51,17 @@ derp:
     verify_clients: true
     # STUN for NAT traversal
     stun_listen_addr: "0.0.0.0:3478"
+    # Private key used to encrypt the traffic between headscale DERP and
+    # Tailscale clients. A missing key will be automatically generated.
+    private_key_path: /var/lib/headscale/derp_server_private.key
+    automatically_add_embedded_derp_region: true
     # Gateway public IP
     ipv4: ${GATEWAY_PUBLIC_IP}
-    automatically_add_embedded_derp_region: true
   # Also use Tailscale's public DERP servers as fallback
   urls:
     - https://controlplane.tailscale.com/derpmap/default
   auto_update_enabled: true
-  update_frequency: 24h
+  update_frequency: 3h
 
 # Disable automatic check for updates
 disable_check_updates: true
@@ -105,5 +118,7 @@ oidc:
   issuer: "https://auth.${DOMAIN}/application/o/headscale/"
   client_id: "${HEADSCALE_OIDC_CLIENT_ID}"
   client_secret: "${HEADSCALE_OIDC_CLIENT_SECRET}"
+  expiry: 0
+  email_verified_required: false
   allowed_users: []
   allowed_domains: []
