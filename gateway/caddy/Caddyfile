@@ -1,7 +1,9 @@
 {
-	servers {
-		metrics
-	}
+    admin :2019
+    metrics {
+        per_host
+        observe_catchall_hosts
+    }
 }
 
 vpn.{$DOMAIN} {
