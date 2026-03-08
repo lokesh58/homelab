@@ -13,9 +13,9 @@ services:
       - caddy_config:/config
       - caddy_logs:/var/log/caddy
     ports:
-      - 80:80
-      - 443:443
-      - 2019:2019 # for caddy metrics
+      - 80:80/tcp
+      - 443:443/tcp
+      - 2019:2019/tcp # for caddy metrics
     networks:
       - headscale_net
 
@@ -29,11 +29,9 @@ services:
     volumes:
       - ./headscale/config.yaml:/etc/headscale/config.yaml:ro
       - headscale_data:/var/lib/headscale
-    extra_hosts:
-      - "auth.${DOMAIN}:${SERVER_TAILSCALE_IP}"
     ports:
       - 3478:3478/udp # for STUN
-      - 9090:9090 # for metrics
+      - 9090:9090/tcp # for metrics
     networks:
       - headscale_net
 
@@ -48,8 +46,6 @@ services:
       - headplane_data:/var/lib/headplane
     networks:
       - headscale_net
-    ports:
-      - 3000:3000
 
   crowdsec:
     image: docker.io/crowdsecurity/crowdsec:v1.7.6

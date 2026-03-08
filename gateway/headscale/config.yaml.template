@@ -104,12 +104,10 @@ log:
 unix_socket: /var/run/headscale/headscale.sock
 unix_socket_permission: "0770"
 
-# ACL Policy - DISABLED
-# When no policy is configured, Headscale allows all traffic by default
-# This is suitable for trusted family/personal networks
-# To enable ACLs later, set mode to "file" and provide a path
+# ACL Policy
+# Set mode to "database" so Headplane can manage the policies via API
 policy:
-  mode: ""
+  mode: "database"
   path: ""
 
 # OIDC Configuration - Authentik
