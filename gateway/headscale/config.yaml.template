@@ -93,16 +93,7 @@ dns:
       - 8.8.8.8
 
   # Extra DNS records
-  extra_records:
-    - name: vpn.${DOMAIN}
-      type: A
-      value: ${GATEWAY_PUBLIC_IP}
-    - name: ${DOMAIN}
-      type: A
-      value: ${SERVER_TAILSCALE_IP}
-    - name: "*.${DOMAIN}"
-      type: A
-      value: ${SERVER_TAILSCALE_IP}
+  extra_records: []
 
 # Log settings
 log:
@@ -132,4 +123,3 @@ oidc:
   email_verified_required: false
   allowed_users: []
   allowed_domains: []
-
