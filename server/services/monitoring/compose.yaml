@@ -18,7 +18,7 @@ services:
       - traefik.http.routers.prometheus.entrypoints=websecure
       - traefik.http.routers.prometheus.rule=Host(`prometheus.internal.${DOMAIN}`)
       - traefik.http.routers.prometheus.middlewares=authentik_auth@file
-      - traefik.http.services.prometheus.loadbalancer.server.port=3000
+      - traefik.http.services.prometheus.loadbalancer.server.port=9090
 
   grafana:
     image: docker.io/grafana/grafana:12.4.0
