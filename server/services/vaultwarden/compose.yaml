@@ -41,11 +41,8 @@ services:
       # Admin Router (Protected by Authentik)
       - traefik.http.routers.vaultwarden_admin.entrypoints=websecure
       - traefik.http.routers.vaultwarden_admin.rule=Host(`vw.internal.${DOMAIN}`)
-      - traefik.http.routers.vaultwarden_admin.middlewares=authentik_auth@file,vw_admin_redir
+      - traefik.http.routers.vaultwarden_admin.middlewares=authentik_auth@file
       - traefik.http.routers.vaultwarden_admin.service=vaultwarden
-      # Admin Redirect Middleware (Root -> /admin)
-      - traefik.http.middlewares.vw_admin_redir.redirectregex.regex=^https?://[^/]+/?$$
-      - traefik.http.middlewares.vw_admin_redir.redirectregex.replacement=https://vw.internal.${DOMAIN}/admin
       # Service Definition
       - traefik.http.services.vaultwarden.loadbalancer.server.port=80
 
