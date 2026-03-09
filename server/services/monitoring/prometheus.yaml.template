@@ -11,10 +11,10 @@ scrape_configs:
       - targets: ['traefik:8082']
     metrics_path: /metrics
 
-  # Caddy metrics (Gateway via Tailscale)
-  - job_name: 'caddy'
+  # Traefik metrics (Gateway via Tailscale)
+  - job_name: 'traefik_gateway'
     static_configs:
-      - targets: ['${GATEWAY_TAILSCALE_IP}:2019']
+      - targets: ['${GATEWAY_TAILSCALE_IP}:8082']
     metrics_path: /metrics
 
   # Headscale metrics (Gateway via Tailscale)
@@ -22,3 +22,4 @@ scrape_configs:
     static_configs:
       - targets: ['${GATEWAY_TAILSCALE_IP}:9090']
     metrics_path: /metrics
+

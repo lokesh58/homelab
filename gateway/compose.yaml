@@ -1,21 +1,49 @@
 name: homelab_gateway
 
 services:
-  caddy:
-    image: ghcr.io/caddybuilds/caddy-cloudflare:2.11.1
+  traefik:
+    image: docker.io/library/traefik:3.6
     restart: unless-stopped
-    environment:
-      - CLOUDFLARE_API_TOKEN=${CF_DNS_API_TOKEN}
-      - DOMAIN=${DOMAIN}
-    volumes:
-      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-      - caddy_logs:/var/log/caddy
+    command:
+      # === Entry Points: web (http redirect) ===
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entryPoint.to=websecure
+      - --entrypoints.web.http.redirections.entryPoint.scheme=https
+      - --entrypoints.web.http.redirections.entrypoint.permanent=true
+      # === Entry Points: websecure (https) ===
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.websecure.http.tls=true
+      - --entrypoints.websecure.http.tls.certresolver=le
+      # === Certificate Resolver: LetsEncrypt ===
+      - --certificatesresolvers.le.acme.dnschallenge=true
+      - --certificatesresolvers.le.acme.dnschallenge.provider=cloudflare
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.le.acme.caserver=https://acme-v02.api.letsencrypt.org/directory
+      # === Docker Provider ===
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=headscale_net
+      # === Metrics (Prometheus) ===
+      - --metrics.prometheus=true
+      - --metrics.prometheus.entryPoint=metrics
+      - --entrypoints.metrics.address=:8082
+      # === Logging ===
+      - --log.level=INFO
+      # === Access Logs (for CrowdSec) ===
+      - --accesslog=true
+      - --accesslog.filepath=/var/log/traefik/access.log
+      - --accesslog.bufferingsize=100
+      - --accesslog.format=json
     ports:
       - 80:80/tcp
       - 443:443/tcp
-      - 2019:2019/tcp # for caddy metrics
+      - 8082:8082/tcp # for traefik metrics
+    environment:
+      CF_DNS_API_TOKEN: ${CF_DNS_API_TOKEN}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - letsencrypt:/letsencrypt
+      - traefik_logs:/var/log/traefik
     networks:
       - headscale_net
 
@@ -34,6 +62,12 @@ services:
       - 9090:9090/tcp # for metrics
     networks:
       - headscale_net
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.headscale.rule=Host(`vpn.${DOMAIN}`)
+      - traefik.http.routers.headscale.entrypoints=websecure
+      - traefik.http.routers.headscale.tls.certresolver=le
+      - traefik.http.services.headscale.loadbalancer.server.port=8080
 
   headplane:
     image: ghcr.io/tale/headplane:0.6.2
@@ -46,12 +80,18 @@ services:
       - headplane_data:/var/lib/headplane
     networks:
       - headscale_net
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.headplane.rule=Host(`vpn.internal.${DOMAIN}`)
+      - traefik.http.routers.headplane.entrypoints=websecure
+      - traefik.http.routers.headplane.tls.certresolver=le
+      - traefik.http.services.headplane.loadbalancer.server.port=3000
 
   crowdsec:
     image: docker.io/crowdsecurity/crowdsec:v1.7.6
     restart: unless-stopped
     environment:
-      - COLLECTIONS=crowdsecurity/linux crowdsecurity/sshd crowdsecurity/caddy crowdsecurity/base-http-scenarios crowdsecurity/http-cve crowdsecurity/http-dos
+      - COLLECTIONS=crowdsecurity/linux crowdsecurity/sshd crowdsecurity/traefik crowdsecurity/base-http-scenarios crowdsecurity/http-cve crowdsecurity/http-dos
     volumes:
       - crowdsec_config:/etc/crowdsec
       - ./crowdsec/acquis.d:/etc/crowdsec/acquis.d:ro
@@ -59,7 +99,7 @@ services:
       - crowdsec_db:/var/lib/crowdsec/data
       - /var/log/auth.log:/var/log/auth.log:ro
       - /var/log/syslog:/var/log/syslog:ro
-      - caddy_logs:/var/log/caddy:ro
+      - traefik_logs:/var/log/traefik:ro
     ports:
       - 127.0.0.1:8080:8080
     networks:
@@ -70,9 +110,8 @@ networks:
   crowdsec_net:
 
 volumes:
-  caddy_data:
-  caddy_config:
-  caddy_logs:
+  letsencrypt:
+  traefik_logs:
   headscale_data:
   headplane_data:
   crowdsec_config:
