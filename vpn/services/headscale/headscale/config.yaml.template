@@ -83,8 +83,8 @@ derp:
     region_id: 999
 
     # Region code and name are displayed in the Tailscale UI to identify a DERP region
-    region_code: "homelab"
-    region_name: "Homelab Embedded DERP"
+    region_code: "headscale"
+    region_name: "Headscale Embedded DERP"
 
     # Only allow clients associated with this server access
     verify_clients: true
@@ -309,10 +309,8 @@ dns:
   # so far only A and AAAA records are supported (on the tailscale side)
   # See: docs/ref/dns.md
   extra_records:
-    - { name: "${DOMAIN}", "type": "A", "value": "${SERVER_HEADSCALE_IPV4}"}
-    - { name: "${DOMAIN}", "type": "AAAA", "value": "${SERVER_HEADSCALE_IPV6}"}
-    - { name: "*.${DOMAIN}", "type": "A", "value": "${SERVER_HEADSCALE_IPV4}"}
-    - { name: "*.${DOMAIN}", "type": "AAAA", "value": "${SERVER_HEADSCALE_IPV6}"}
+    - { name: "${DOMAIN}", type: "A", value: "${SERVER_TAILSCALE_IPV4}" }
+    - { name: "${DOMAIN}", type: "AAAA", value: "${SERVER_TAILSCALE_IPV6}" }
   #
   # Alternatively, extra DNS records can be loaded from a JSON file.
   # Headscale processes this file on each change.
