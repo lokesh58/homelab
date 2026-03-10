@@ -1,0 +1,42 @@
+services:
+  headscale:
+    image: docker.io/headscale/headscale:0.28.0
+    restart: unless-stopped
+    command: serve
+    read_only: true
+    tmpfs:
+      - /var/run/headscale
+    volumes:
+      - ./headscale/config.yaml:/etc/headscale/config.yaml:ro
+      - headscale_data:/var/lib/headscale
+    ports:
+      - 3478:3478/udp # for STUN
+      - 9090:9090/tcp # for metrics
+    networks:
+      - traefik_proxy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.headscale.entrypoints=websecure
+      - traefik.http.routers.headscale.rule=Host(`vpn.${DOMAIN}`) && !PathPrefix(`/admin`)
+      - traefik.http.services.headscale.loadbalancer.server.port=8080
+
+  headplane:
+    image: ghcr.io/tale/headplane:0.6.2
+    restart: unless-stopped
+    depends_on:
+      - headscale
+    volumes:
+      - ./headplane/config.yaml:/etc/headplane/config.yaml:ro
+      - ./headscale/config.yaml:/etc/headscale/config.yaml:ro
+      - headplane_data:/var/lib/headplane
+    networks:
+      - traefik_proxy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.headplane.entrypoints=websecure
+      - traefik.http.routers.headplane.rule=Host(`vpn.${DOMAIN}`) && PathPrefix(`/admin`)
+      - traefik.http.services.headplane.loadbalancer.server.port=3000
+
+volumes:
+  headscale_data:
+  headplane_data:

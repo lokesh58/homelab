@@ -106,8 +106,8 @@ derp:
 
     # For better connection stability (especially when using an Exit-Node and DNS is not working),
     # it is possible to optionally add the public IPv4 and IPv6 address to the Derp-Map using:
-    ipv4: ${GATEWAY_PUBLIC_IPV4}
-    ipv6: ${GATEWAY_PUBLIC_IPV6}
+    ipv4: ${VPN_PUBLIC_IPV4}
+    ipv6: ${VPN_PUBLIC_IPV6}
 
   # List of externally available DERP maps encoded in JSON
   urls: [] # disable tailscale derp
@@ -308,13 +308,11 @@ dns:
   # Extra DNS records
   # so far only A and AAAA records are supported (on the tailscale side)
   # See: docs/ref/dns.md
-  extra_records: []
-  #   - name: "grafana.myvpn.example.com"
-  #     type: "A"
-  #     value: "100.64.0.3"
-  #
-  #   # you can also put it in one line
-  #   - { name: "prometheus.myvpn.example.com", type: "A", value: "100.64.0.3" }
+  extra_records:
+    - { name: "${DOMAIN}", "type": "A", "value": "${SERVER_HEADSCALE_IPV4}"}
+    - { name: "${DOMAIN}", "type": "AAAA", "value": "${SERVER_HEADSCALE_IPV6}"}
+    - { name: "*.${DOMAIN}", "type": "A", "value": "${SERVER_HEADSCALE_IPV4}"}
+    - { name: "*.${DOMAIN}", "type": "AAAA", "value": "${SERVER_HEADSCALE_IPV6}"}
   #
   # Alternatively, extra DNS records can be loaded from a JSON file.
   # Headscale processes this file on each change.
@@ -328,7 +326,7 @@ unix_socket_permission: "0770"
 # OpenID Connect
 oidc:
   # Block startup until the identity provider is available and healthy.
-  only_start_if_oidc_is_available: true # set to false for initial boot when server and gateway not in headscale net
+  only_start_if_oidc_is_available: true # set to false for initial boot when server and vpn not in headscale net
 
   # OpenID Connect Issuer URL from the identity provider
   issuer: "https://auth.${DOMAIN}/application/o/headscale/"

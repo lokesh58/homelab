@@ -9,15 +9,15 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-# Hardcoded paths relative to the gateway directory
+# Hardcoded paths relative to the vpn directory
 ENV_FILE=".env"
-HEADSCALE_TEMPLATE="headscale/config.yaml.template"
-HEADPLANE_TEMPLATE="headplane/config.yaml.template"
+HEADSCALE_TEMPLATE="services/headscale/headscale/config.yaml.template"
+HEADPLANE_TEMPLATE="services/headscale/headplane/config.yaml.template"
 
-# Ensure script is run from the gateway directory
+# Ensure script is run from the vpn directory
 if [ ! -f "$ENV_FILE" ]; then
     echo -e "${RED}Error: Cannot find $ENV_FILE.${NC}"
-    echo "Make sure you are running this script from inside the 'gateway' directory"
+    echo "Make sure you are running this script from inside the 'vpn' directory"
     echo "and that you have created your .env file."
     exit 1
 fi
@@ -41,7 +41,7 @@ process_template() {
     fi
 
     # Read the template, substitute variables, and write to target
-    envsubst < "$template_file" > "$target_file"
+    envsubst <"$template_file" >"$target_file"
 
     echo -e "${GREEN}Generated: $target_file${NC}"
 }

@@ -11,15 +11,15 @@ scrape_configs:
       - targets: ['traefik:8082']
     metrics_path: /metrics
 
-  # Traefik metrics (Gateway via Tailscale)
-  - job_name: 'traefik_gateway'
+  # Traefik metrics (VPN server via Tailscale)
+  - job_name: 'traefik_vpn'
     static_configs:
-      - targets: ['${GATEWAY_TAILSCALE_IP}:8082']
+      - targets: ['${VPN_TAILSCALE_IP}:8082']
     metrics_path: /metrics
 
-  # Headscale metrics (Gateway via Tailscale)
+  # Headscale metrics (VPN server via Tailscale)
   - job_name: 'headscale'
     static_configs:
-      - targets: ['${GATEWAY_TAILSCALE_IP}:9090']
+      - targets: ['${VPN_TAILSCALE_IP}:9090']
     metrics_path: /metrics
 

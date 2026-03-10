@@ -54,7 +54,6 @@ services:
       - --entrypoints.websecure.http.tls.certresolver=le
       - --entrypoints.websecure.http.tls.domains[0].main=${DOMAIN}
       - --entrypoints.websecure.http.tls.domains[0].sans=*.${DOMAIN}
-      - --entrypoints.websecure.http.tls.domains[1].main=*.internal.${DOMAIN}
       - --entrypoints.websecure.http.middlewares=crowdsec@file
       # === Certificate Resolver: LetsEncrypt ===
       - --certificatesresolvers.le.acme.dnschallenge=true
@@ -87,6 +86,7 @@ services:
     ports:
       - 80:80/tcp
       - 443:443/tcp
+      - 8082:8082/tcp # for traefik metrics
     environment:
       CF_DNS_API_TOKEN: ${TRAEFIK_CF_DNS_API_TOKEN}
       CROWDSEC_LAPI_KEY: ${TRAEFIK_CROWDSEC_LAPI_KEY}
@@ -95,41 +95,19 @@ services:
       - letsencrypt:/letsencrypt
       - traefik_logs:/var/log/traefik
     networks:
-      traefik_net:
-      traefik_proxy:
-        ipv4_address: 192.168.32.254
-      docker_socket_proxy_net:
-
-  crowdsec:
-    image: docker.io/crowdsecurity/crowdsec:v1.7.6
-    restart: unless-stopped
-    environment:
-      - COLLECTIONS=crowdsecurity/traefik crowdsecurity/appsec-virtual-patching crowdsecurity/appsec-generic-rules crowdsecurity/base-http-scenarios crowdsecurity/http-cve crowdsecurity/http-dos
-    volumes:
-      - crowdsec_config:/etc/crowdsec
-      - ./crowdsec/acquis.d:/etc/crowdsec/acquis.d:ro
-      - ./crowdsec/acquis.yaml:/etc/crowdsec/acquis.yaml:ro
-      - crowdsec_db:/var/lib/crowdsec/data
-      - traefik_logs:/var/log/traefik:ro
-    networks:
       - traefik_net
+      - traefik_proxy
+      - docker_socket_proxy_net
 
 networks:
   docker_socket_proxy_net:
     internal: true
   traefik_net:
     internal: false
-  traefik_ingress:
-    internal: true
   traefik_proxy:
     name: traefik_proxy
     internal: true
-    ipam:
-      config:
-        - subnet: 192.168.32.0/20
 
 volumes:
   letsencrypt:
   traefik_logs:
-  crowdsec_config:
-  crowdsec_db:
