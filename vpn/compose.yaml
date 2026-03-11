@@ -5,4 +5,5 @@ include:
   - services/crowdsec/compose.yaml
   - services/docker_socket_proxy/compose.yaml
   - services/headscale/compose.yaml
+  - services/monitoring/compose.yaml
   - services/traefik/compose.yaml

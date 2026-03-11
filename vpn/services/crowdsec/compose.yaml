@@ -2,6 +2,13 @@ services:
   crowdsec:
     image: docker.io/crowdsecurity/crowdsec:v1.7.6-debian
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    user: "${PUID}:${PGID}"
+    group_add:
+      - "${JOURNAL_GID}"
     environment:
       - COLLECTIONS=crowdsecurity/linux crowdsecurity/sshd crowdsecurity/traefik crowdsecurity/base-http-scenarios crowdsecurity/http-cve crowdsecurity/http-dos
       - BOUNCER_KEY_TRAEFIK=${TRAEFIK_CROWDSEC_LAPI_KEY}
@@ -18,12 +25,6 @@ services:
     networks:
       - crowdsec_private_net
       - crowdsec_public_net
-      - traefik_public_net
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.crowdsec-metrics.entrypoints=websecure_private
-      - traefik.http.routers.crowdsec-metrics.rule=Host(`crowdsec-metrics.vpn.${DOMAIN}`)
-      - traefik.http.services.crowdsec-metrics.loadbalancer.server.port=6060
 
 volumes:
   crowdsec_config:

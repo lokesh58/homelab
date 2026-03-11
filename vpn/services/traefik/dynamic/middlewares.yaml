@@ -1,5 +1,9 @@
 http:
   middlewares:
+    private_only:
+      ipWhiteList:
+        sourceRange:
+          - "100.64.0.0/10" # Headscale CGNAT range
     crowdsec:
       plugin:
         crowdsec_bouncer_traefik_plugin:

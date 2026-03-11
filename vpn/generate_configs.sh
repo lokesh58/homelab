@@ -13,6 +13,7 @@ NC='\033[0m' # No Color
 ENV_FILE=".env"
 HEADSCALE_TEMPLATE="services/headscale/headscale/config.yaml.template"
 HEADPLANE_TEMPLATE="services/headscale/headplane/config.yaml.template"
+PROMETHEUS_AGENT_TEMPLATE="services/monitoring/prometheus-agent.yaml.template"
 
 # Ensure script is run from the vpn directory
 if [ ! -f "$ENV_FILE" ]; then
@@ -49,5 +50,6 @@ process_template() {
 echo -e "\n${YELLOW}Generating configurations...${NC}"
 process_template "$HEADSCALE_TEMPLATE"
 process_template "$HEADPLANE_TEMPLATE"
+process_template "$PROMETHEUS_AGENT_TEMPLATE"
 
 echo -e "\n${GREEN}Configuration generation complete!${NC}"

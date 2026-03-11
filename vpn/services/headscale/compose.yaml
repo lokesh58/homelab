@@ -2,6 +2,11 @@ services:
   headscale:
     image: docker.io/headscale/headscale:0.28.0
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    user: "${PUID}:${PGID}"
     command: serve
     read_only: true
     tmpfs:
@@ -14,19 +19,23 @@ services:
       - 3478:3478/udp # for STUN
     networks:
       - headscale_private_net
+      - headscale_public_net
       - traefik_public_net
     labels:
       - traefik.enable=true
-      - traefik.http.routers.headscale.entrypoints=websecure_private,websecure_public
+      - traefik.http.routers.headscale.entrypoints=websecure
       - traefik.http.routers.headscale.rule=Host(`vpn.${DOMAIN}`) && !PathPrefix(`/admin`)
       - traefik.http.services.headscale.loadbalancer.server.port=8080
-      - traefik.http.routers.headscale-metrics.entrypoints=websecure_private
-      - traefik.http.routers.headscale-metrics.rule=Host(`headscale-metrics.vpn.${DOMAIN}`)
-      - traefik.http.services.headscale-metrics.loadbalancer.server.port=9090
 
   headplane:
     image: ghcr.io/tale/headplane:0.6.2
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    user: "${PUID}:${PGID}"
+    read_only: true
     depends_on:
       - headscale
     volumes:
@@ -39,7 +48,8 @@ services:
       - traefik_public_net
     labels:
       - traefik.enable=true
-      - traefik.http.routers.headplane.entrypoints=websecure_private
+      - traefik.http.routers.headplane.entrypoints=websecure
+      - traefik.http.routers.headplane.middlewares=private_only@file
       - traefik.http.routers.headplane.rule=Host(`vpn.${DOMAIN}`) && PathPrefix(`/admin`)
       - traefik.http.services.headplane.loadbalancer.server.port=3000
 
@@ -50,3 +60,5 @@ volumes:
 networks:
   headscale_private_net:
     internal: false
+  headscale_public_net:
+    internal: true
