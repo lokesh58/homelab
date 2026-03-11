@@ -3,18 +3,29 @@ services:
     image: docker.io/library/traefik:3.6.10
     restart: unless-stopped
     command:
-      # === Entry Points: web (http redirect) ===
-      - --entrypoints.web.address=:80
-      - --entrypoints.web.http.redirections.entryPoint.to=websecure
-      - --entrypoints.web.http.redirections.entryPoint.scheme=https
-      - --entrypoints.web.http.redirections.entrypoint.permanent=true
-      # === Entry Points: websecure (https) ===
-      - --entrypoints.websecure.address=:443
-      - --entrypoints.websecure.http.tls=true
-      - --entrypoints.websecure.http.tls.certresolver=le
-      - --entrypoints.websecure.http.tls.domains[0].main=${DOMAIN}
-      - --entrypoints.websecure.http.tls.domains[0].sans=*.${DOMAIN}
-      - --entrypoints.websecure.http.middlewares=crowdsec@file
+      # === Entry Points: web_public (http redirect) ===
+      - --entrypoints.web_public.address=:8080
+      - --entrypoints.web_public.http.redirections.entryPoint.to=websecure_public
+      - --entrypoints.web_public.http.redirections.entryPoint.scheme=https
+      - --entrypoints.web_public.http.redirections.entrypoint.permanent=true
+      # === Entry Points: websecure_public (https) ===
+      - --entrypoints.websecure_public.address=:8443
+      - --entrypoints.websecure_public.http.tls=true
+      - --entrypoints.websecure_public.http.tls.certresolver=le
+      - --entrypoints.websecure_public.http.tls.domains[0].main=${DOMAIN}
+      - --entrypoints.websecure_public.http.tls.domains[0].sans=*.${DOMAIN}
+      - --entrypoints.websecure_public.http.tls.domains[1].main=*.vpn.${DOMAIN}
+      - --entrypoints.websecure_public.http.middlewares=crowdsec@file
+      # === Entry Points: web_private (http redirect) ===
+      - --entrypoints.web_public.address=:80
+      - --entrypoints.web_public.http.redirections.entryPoint.to=websecure_private
+      - --entrypoints.web_public.http.redirections.entryPoint.scheme=https
+      - --entrypoints.web_public.http.redirections.entrypoint.permanent=true
+      # === Entry Points: websecure_private (https) ===
+      - --entrypoints.websecure_private.address=:443
+      - --entrypoints.websecure_private.http.tls=true
+      - --entrypoints.websecure_private.http.tls.certresolver=le
+      - --entrypoints.websecure_private.http.middlewares=crowdsec@file
       # === Certificate Resolver: LetsEncrypt ===
       - --certificatesresolvers.le.acme.dnschallenge=true
       - --certificatesresolvers.le.acme.dnschallenge.provider=cloudflare
@@ -46,7 +57,8 @@ services:
     ports:
       - 80:80/tcp
       - 443:443/tcp
-      - 8082:8082/tcp # for traefik metrics
+      - 8080:8080/tcp
+      - 8443:8443/tcp
     environment:
       CF_DNS_API_TOKEN: ${TRAEFIK_CF_DNS_API_TOKEN}
       CROWDSEC_LAPI_KEY: ${TRAEFIK_CROWDSEC_LAPI_KEY}
@@ -60,8 +72,18 @@ services:
       - docker_socket_proxy_public_net
       - crowdsec_public_net
     labels:
+      # Allow docker socket access by proxy
       - 'socket-proxy.allow.get=/v1\..{1,2}/(version|containers/.*|events.*)'
       - 'socket-proxy.allow.head=/_ping'
+      # Expose traefik metrics
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.traefik-metrics.entrypoints=websecure_private'
+      - 'traefik.http.routers.traefik-metrics.rule=Host(`traefik-metrics.vpn.${DOMAIN}`)'
+      - 'traefik.http.routers.traefik-metrics.service=prometheus@internal'
+
+volumes:
+  letsencrypt:
+  traefik_logs:
 
 networks:
   traefik_private_net:
@@ -69,7 +91,3 @@ networks:
   traefik_public_net:
     name: traefik_public_net
     internal: true
-
-volumes:
-  letsencrypt:
-  traefik_logs:

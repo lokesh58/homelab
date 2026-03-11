@@ -12,14 +12,17 @@ services:
       - headscale_data:/var/lib/headscale
     ports:
       - 3478:3478/udp # for STUN
-      - 9090:9090/tcp # for metrics
     networks:
-      - traefik_proxy
+      - headscale_private_net
+      - traefik_public_net
     labels:
       - traefik.enable=true
-      - traefik.http.routers.headscale.entrypoints=websecure
+      - traefik.http.routers.headscale.entrypoints=websecure_private,websecure_public
       - traefik.http.routers.headscale.rule=Host(`vpn.${DOMAIN}`) && !PathPrefix(`/admin`)
       - traefik.http.services.headscale.loadbalancer.server.port=8080
+      - traefik.http.routers.headscale-metrics.entrypoints=websecure_private
+      - traefik.http.routers.headscale-metrics.rule=Host(`headscale-metrics.vpn.${DOMAIN}`)
+      - traefik.http.services.headscale-metrics.loadbalancer.server.port=9090
 
   headplane:
     image: ghcr.io/tale/headplane:0.6.2
@@ -32,13 +35,18 @@ services:
       - ./headscale/acls.hujson:/etc/headscale/acls.hujson:ro
       - headplane_data:/var/lib/headplane
     networks:
-      - traefik_proxy
+      - headscale_private_net
+      - traefik_public_net
     labels:
       - traefik.enable=true
-      - traefik.http.routers.headplane.entrypoints=websecure
+      - traefik.http.routers.headplane.entrypoints=websecure_private
       - traefik.http.routers.headplane.rule=Host(`vpn.${DOMAIN}`) && PathPrefix(`/admin`)
       - traefik.http.services.headplane.loadbalancer.server.port=3000
 
 volumes:
   headscale_data:
   headplane_data:
+
+networks:
+  headscale_private_net:
+    internal: false

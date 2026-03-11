@@ -5,6 +5,8 @@ services:
     environment:
       - COLLECTIONS=crowdsecurity/linux crowdsecurity/sshd crowdsecurity/traefik crowdsecurity/base-http-scenarios crowdsecurity/http-cve crowdsecurity/http-dos
       - BOUNCER_KEY_TRAEFIK=${TRAEFIK_CROWDSEC_LAPI_KEY}
+      - PROMETHEUS_ENABLED=true
+      - PROMETHEUS_LISTEN_ADDR=0.0.0.0
     volumes:
       - crowdsec_config:/etc/crowdsec
       - ./acquis.d:/etc/crowdsec/acquis.d:ro
@@ -12,17 +14,23 @@ services:
       - /var/log/journal:/run/log/journal:ro
       - traefik_logs:/var/log/traefik:ro
     ports:
-      - 127.0.0.1:8080:8080
+      - 127.0.0.1:3000:8080
     networks:
       - crowdsec_private_net
       - crowdsec_public_net
+      - traefik_public_net
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.crowdsec-metrics.entrypoints=websecure_private
+      - traefik.http.routers.crowdsec-metrics.rule=Host(`crowdsec-metrics.vpn.${DOMAIN}`)
+      - traefik.http.services.crowdsec-metrics.loadbalancer.server.port=6060
+
+volumes:
+  crowdsec_config:
+  crowdsec_db:
 
 networks:
   crowdsec_private_net:
     internal: false
   crowdsec_public_net:
     internal: true
-
-volumes:
-  crowdsec_config:
-  crowdsec_db:
