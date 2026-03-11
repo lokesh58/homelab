@@ -1,32 +1,28 @@
 services:
   crowdsec:
-    image: docker.io/crowdsecurity/crowdsec:v1.7.6
+    image: docker.io/crowdsecurity/crowdsec:v1.7.6-debian
     restart: unless-stopped
     environment:
       - COLLECTIONS=crowdsecurity/linux crowdsecurity/sshd crowdsecurity/traefik crowdsecurity/base-http-scenarios crowdsecurity/http-cve crowdsecurity/http-dos
+      - BOUNCER_KEY_TRAEFIK=${TRAEFIK_CROWDSEC_LAPI_KEY}
     volumes:
       - crowdsec_config:/etc/crowdsec
-      - ./config/acquis.d:/etc/crowdsec/acquis.d:ro
-      - ./config/acquis.yaml:/etc/crowdsec/acquis.yaml:ro
+      - ./acquis.d:/etc/crowdsec/acquis.d:ro
       - crowdsec_db:/var/lib/crowdsec/data
-      - /var/log/auth.log:/var/log/auth.log:ro
-      - /var/log/syslog:/var/log/syslog:ro
+      - /var/log/journal:/run/log/journal:ro
       - traefik_logs:/var/log/traefik:ro
     ports:
       - 127.0.0.1:8080:8080
     networks:
-      - crowdsec_net
-      - traefik_proxy
+      - crowdsec_private_net
+      - crowdsec_public_net
 
 networks:
-  crowdsec_net:
+  crowdsec_private_net:
+    internal: false
+  crowdsec_public_net:
     internal: true
-  traefik_proxy:
-    name: traefik_proxy
-    external: true
 
 volumes:
   crowdsec_config:
   crowdsec_db:
-  traefik_logs:
-    external: true
