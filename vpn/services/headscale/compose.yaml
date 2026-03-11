@@ -8,6 +8,7 @@ services:
       - /var/run/headscale
     volumes:
       - ./headscale/config.yaml:/etc/headscale/config.yaml:ro
+      - ./headscale/acls.hujson:/etc/headscale/acls.hujson:ro
       - headscale_data:/var/lib/headscale
     ports:
       - 3478:3478/udp # for STUN
@@ -28,6 +29,7 @@ services:
     volumes:
       - ./headplane/config.yaml:/etc/headplane/config.yaml:ro
       - ./headscale/config.yaml:/etc/headscale/config.yaml:ro
+      - ./headscale/acls.hujson:/etc/headscale/acls.hujson:ro
       - headplane_data:/var/lib/headplane
     networks:
       - traefik_proxy
