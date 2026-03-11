@@ -1,0 +1,22 @@
+services:
+  docker_socket_proxy:
+    image: docker.io/wollomatic/socket-proxy:1.11.4
+    container_name: docker_socket_proxy
+    restart: unless-stopped
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges
+    command:
+      - '-loglevel=info'
+      - '-listenip=0.0.0.0'
+      - '-proxycontainername=docker_socket_proxy'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - docker_socket_proxy_public_net
+
+networks:
+  docker_socket_proxy_public_net:
+    internal: true
