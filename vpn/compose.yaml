@@ -3,5 +3,6 @@ name: homelab_vpn
 include:
   # Infrastructure services
   - services/crowdsec/compose.yaml
+  - services/docker_socket_proxy/compose.yaml
   - services/headscale/compose.yaml
   - services/traefik/compose.yaml
