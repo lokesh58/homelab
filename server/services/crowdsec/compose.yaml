@@ -1,0 +1,34 @@
+services:
+  crowdsec:
+    image: docker.io/crowdsecurity/crowdsec:v1.7.6-debian
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    user: "${PUID}:${PGID}"
+    group_add:
+      - "${JOURNAL_GID}"
+    environment:
+      - COLLECTIONS=crowdsecurity/traefik crowdsecurity/base-http-scenarios crowdsecurity/http-cve crowdsecurity/http-dos
+      - BOUNCER_KEY_TRAEFIK=${TRAEFIK_CROWDSEC_LAPI_KEY}
+      - PROMETHEUS_ENABLED=true
+      - PROMETHEUS_LISTEN_ADDR=0.0.0.0
+    volumes:
+      - crowdsec_config:/etc/crowdsec
+      - ./acquis.d:/etc/crowdsec/acquis.d:ro
+      - crowdsec_db:/var/lib/crowdsec/data
+      - traefik_logs:/var/log/traefik:ro
+    networks:
+      - crowdsec_private_net
+      - crowdsec_public_net
+
+volumes:
+  crowdsec_config:
+  crowdsec_db:
+
+networks:
+  crowdsec_private_net:
+    internal: false
+  crowdsec_public_net:
+    internal: true
