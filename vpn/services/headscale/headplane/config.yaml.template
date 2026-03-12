@@ -7,7 +7,7 @@ server:
   # The base URL for Headplane. Please keep in mind that this will be required
   # for Headscale to properly function going forward AND it should not include
   # the dashboard prefix (/admin) portion.
-  base_url: "https://vpn.${DOMAIN}"
+  base_url: "https://headplane.vpn.${DOMAIN}"
 
   # The secret used to encode and decode web sessions (must be 32 characters)
   # You may also provide `cookie_secret_path` instead to read a value from disk.
@@ -62,7 +62,7 @@ headscale:
 
   # Optional, public URL if its different from the `headscale.url`
   # This affects certain parts of the web UI which shows Headscale's URL
-  public_url: "https://vpn.${DOMAIN}"
+  public_url: "https://headscale.vpn.${DOMAIN}"
 
   # Path to the Headscale configuration file
   # This is optional, but HIGHLY recommended for the best experience
@@ -172,7 +172,7 @@ oidc:
   enabled: true
   
   # The OIDC issuer URL
-  issuer: "https://auth.${DOMAIN}/application/o/headplane/"
+  issuer: "https://auth.server.${DOMAIN}/application/o/headplane/"
   
   # If you are using OIDC, you need to generate an API key
   # that can be used to authenticate other sessions when signing in.
@@ -197,12 +197,12 @@ oidc:
   # The client ID for the OIDC client
   # For the best experience please ensure this is *identical* to the client_id
   # you are using for Headscale. because
-  client_id: "${HEADSCALE_OIDC_CLIENT_ID}"
+  client_id: "${HEADPLANE_OIDC_CLIENT_ID}"
   
   # The client secret for the OIDC client
   # You may also provide `client_secret_path` instead to read a value from disk.
   # See https://headplane.net/configuration/#sensitive-values
-  client_secret: "${HEADSCALE_OIDC_CLIENT_SECRET}"
+  client_secret: "${HEADPLANE_OIDC_CLIENT_SECRET}"
   
   # Whether to use PKCE when authenticating users. This is recommended as it
   # adds an extra layer of security to the authentication process. Enabling this

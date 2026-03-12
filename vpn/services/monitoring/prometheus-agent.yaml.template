@@ -2,7 +2,7 @@ global:
   scrape_interval: 15s
 
 remote_write:
-  - url: "https://prometheus.${DOMAIN}/api/v1/write"
+  - url: "https://prometheus.server.${DOMAIN}/api/v1/write"
     send_interval: 10s
 
 scrape_configs:

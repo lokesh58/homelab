@@ -24,7 +24,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.headscale.entrypoints=websecure
-      - traefik.http.routers.headscale.rule=Host(`vpn.${DOMAIN}`) && !PathPrefix(`/admin`)
+      - traefik.http.routers.headscale.rule=Host(`headscale.vpn.${DOMAIN}`)
       - traefik.http.services.headscale.loadbalancer.server.port=8080
 
   headplane:
@@ -50,7 +50,7 @@ services:
       - traefik.enable=true
       - traefik.http.routers.headplane.entrypoints=websecure
       - traefik.http.routers.headplane.middlewares=private_only@file
-      - traefik.http.routers.headplane.rule=Host(`vpn.${DOMAIN}`) && PathPrefix(`/admin`)
+      - traefik.http.routers.headplane.rule=Host(`headplane.vpn.${DOMAIN}`)
       - traefik.http.services.headplane.loadbalancer.server.port=3000
 
 volumes:

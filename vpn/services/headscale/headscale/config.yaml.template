@@ -8,7 +8,7 @@
 # Typically this will be a domain like:
 #
 # https://myheadscale.example.com:443
-server_url: https://vpn.${DOMAIN}
+server_url: https://headscale.vpn.${DOMAIN}
 
 # Address to listen to / bind to on the server
 #
@@ -331,7 +331,7 @@ oidc:
   only_start_if_oidc_is_available: true # set to false for initial boot when server and vpn not in headscale net
 
   # OpenID Connect Issuer URL from the identity provider
-  issuer: "https://auth.${DOMAIN}/application/o/headscale/"
+  issuer: "https://auth.server.${DOMAIN}/application/o/headscale/"
 
   # Client ID from the identity provider
   client_id: "${HEADSCALE_OIDC_CLIENT_ID}"

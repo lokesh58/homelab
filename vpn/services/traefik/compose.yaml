@@ -20,9 +20,8 @@ services:
       - --entrypoints.websecure.address=:443
       - --entrypoints.websecure.http.tls=true
       - --entrypoints.websecure.http.tls.certresolver=le
-      - --entrypoints.websecure.http.tls.domains[0].main=${DOMAIN}
-      - --entrypoints.websecure.http.tls.domains[0].sans=*.${DOMAIN}
-      - --entrypoints.websecure.http.tls.domains[1].main=*.vpn.${DOMAIN}
+      - --entrypoints.websecure.http.tls.domains[0].main=vpn.${DOMAIN}
+      - --entrypoints.websecure.http.tls.domains[0].sans=*.vpn.${DOMAIN}
       - --entrypoints.websecure.http.middlewares=crowdsec@file
       # === Certificate Resolver: LetsEncrypt ===
       - --certificatesresolvers.le.acme.dnschallenge=true
