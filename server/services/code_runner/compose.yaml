@@ -15,7 +15,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.code_runner.entrypoints=websecure
-      - traefik.http.routers.code_runner.rule=Host(`code-runner.${DOMAIN}`)
+      - traefik.http.routers.code_runner.rule=Host(`code-runner.server.${DOMAIN}`)
       - traefik.http.services.code_runner.loadbalancer.server.port=8080
     deploy:
       resources:
