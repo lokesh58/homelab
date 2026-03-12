@@ -1,0 +1,4 @@
+# System logs via journalctl
+source: journalctl
+labels:
+  type: syslog

@@ -10,7 +10,7 @@ services:
     group_add:
       - "${JOURNAL_GID}"
     environment:
-      - COLLECTIONS=crowdsecurity/linux crowdsecurity/sshd crowdsecurity/traefik crowdsecurity/base-http-scenarios crowdsecurity/http-cve crowdsecurity/http-dos
+      - COLLECTIONS=crowdsecurity/linux crowdsecurity/traefik crowdsecurity/base-http-scenarios crowdsecurity/http-cve crowdsecurity/http-dos
       - BOUNCER_KEY_TRAEFIK=${TRAEFIK_CROWDSEC_LAPI_KEY}
       - PROMETHEUS_ENABLED=true
       - PROMETHEUS_LISTEN_ADDR=0.0.0.0

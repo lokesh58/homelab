@@ -67,7 +67,6 @@ services:
       - docker_socket_proxy_public_net
       - crowdsec_public_net
     labels:
-      # Allow docker socket access by proxy
       - 'socket-proxy.allow.get=/v1\..{1,2}/(version|containers/.*|events.*)'
       - 'socket-proxy.allow.head=/_ping'
 
