@@ -1,5 +1,7 @@
 global:
   scrape_interval: 15s
+  external_labels:
+    instance_group: 'vpn_machine'
 
 remote_write:
   - url: "https://prometheus.server.${DOMAIN}/api/v1/write"
@@ -10,28 +12,24 @@ scrape_configs:
     static_configs:
       - targets: ['traefik:8082']
         labels:
-          instance_group: 'vpn_machine'
           service_name: 'traefik'
 
   - job_name: 'vpn_headscale'
     static_configs:
       - targets: ['headscale:9090']
         labels:
-          instance_group: 'vpn_machine'
           service_name: 'headscale'
 
   - job_name: 'vpn_crowdsec'
     static_configs:
       - targets: ['crowdsec:6060']
         labels:
-          instance_group: 'vpn_machine'
           service_name: 'crowdsec'
 
   - job_name: 'vpn_prometheus_agent'
     static_configs:
       - targets: ['localhost:9090']
         labels:
-          instance_group: 'vpn_machine'
           service_name: 'prometheus_agent'
 
   - job_name: 'vpn_crowdsec_firewall_bouncer'
@@ -40,5 +38,4 @@ scrape_configs:
       # The bouncer must be configured to listen on 0.0.0.0:6061 (or the Docker bridge IP)
       - targets: ['host.docker.internal:6061']
         labels:
-          instance_group: 'vpn_machine'
           service_name: 'crowdsec_firewall_bouncer'
