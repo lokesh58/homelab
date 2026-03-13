@@ -3,8 +3,10 @@ name: homelab_server
 include:
   # Infrastructure services
   - services/authentik/compose.yaml
-  - services/traefik/compose.yaml
+  - services/crowdsec/compose.yaml
+  - services/docker_socker_proxy/compose.yaml
   - services/monitoring/compose.yaml
+  - services/traefik/compose.yaml
 
   # Open source applications
   - services/immich/compose.yaml
