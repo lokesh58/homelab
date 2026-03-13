@@ -27,7 +27,6 @@ http:
           crowdsecAppsecHost: crowdsec:7422
           crowdsecAppsecFailureBlock: true
           crowdsecAppsecUnreachableBlock: true
-          crowdsecAppsecBodyLimit: {{ env "MAX_BODY_SIZE_BYTES" }}
           crowdsecLapiScheme: http
           crowdsecLapiHost: crowdsec:8080
           crowdsecLapiKey: {{ env "CROWDSEC_LAPI_KEY" }}

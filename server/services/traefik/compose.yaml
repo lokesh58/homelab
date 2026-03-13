@@ -1,47 +1,7 @@
 services:
-  docker_socket_proxy:
-    image: docker.io/tecnativa/docker-socket-proxy:v0.4.2
-    restart: unless-stopped
-    environment:
-      # Enable only the Docker API endpoints that Traefik needs
-      EVENTS: 1
-      PING: 1
-      VERSION: 1
-      CONTAINERS: 1
-      NETWORKS: 1
-      # Disable everything else for security
-      AUTH: 0
-      SECRETS: 0
-      POST: 0        # Disable all write operations
-      BUILD: 0
-      COMMIT: 0
-      CONFIGS: 0
-      ALLOW_START: 0
-      ALLOW_STOP: 0
-      ALLOW_RESTARTS: 0
-      DISTRIBUTION: 0
-      EXEC: 0
-      GRPC: 0
-      IMAGES: 0
-      INFO: 0
-      NODES: 0
-      PLUGINS: 0
-      SERVICES: 0
-      SESSION: 0
-      SWARM: 0
-      SYSTEM: 0
-      TASKS: 0
-      VOLUMES: 0
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks:
-      - docker_socket_proxy_net
-
   traefik:
-    image: docker.io/library/traefik:3.6
+    image: docker.io/library/traefik:3.6.10
     restart: unless-stopped
-    depends_on:
-      - docker_socket_proxy
     command:
       # === Entry Points: web (http redirect) ===
       - --entrypoints.web.address=:80
@@ -52,9 +12,8 @@ services:
       - --entrypoints.websecure.address=:443
       - --entrypoints.websecure.http.tls=true
       - --entrypoints.websecure.http.tls.certresolver=le
-      - --entrypoints.websecure.http.tls.domains[0].main=${DOMAIN}
-      - --entrypoints.websecure.http.tls.domains[0].sans=*.${DOMAIN}
-      - --entrypoints.websecure.http.tls.domains[1].main=*.internal.${DOMAIN}
+      - --entrypoints.websecure.http.tls.domains[0].main=server.${DOMAIN}
+      - --entrypoints.websecure.http.tls.domains[0].sans=*.server.${DOMAIN}
       - --entrypoints.websecure.http.middlewares=crowdsec@file
       # === Certificate Resolver: LetsEncrypt ===
       - --certificatesresolvers.le.acme.dnschallenge=true
@@ -66,7 +25,7 @@ services:
       - --providers.docker=true
       - --providers.docker.endpoint=tcp://docker_socket_proxy:2375
       - --providers.docker.exposedbydefault=false
-      - --providers.docker.network=traefik_proxy
+      - --providers.docker.network=traefik_public_net
       # === File Provider (for dynamic configuration) ===
       - --providers.file.directory=/etc/traefik/dynamic
       - --providers.file.watch=true
@@ -83,7 +42,7 @@ services:
       - --accesslog.format=json
       # === Experimental Plugins ===
       - --experimental.plugins.crowdsec_bouncer_traefik_plugin.moduleName=github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin
-      - --experimental.plugins.crowdsec_bouncer_traefik_plugin.version=v1.4.6
+      - --experimental.plugins.crowdsec_bouncer_traefik_plugin.version=v1.5.1
     ports:
       - 80:80/tcp
       - 443:443/tcp
@@ -95,41 +54,25 @@ services:
       - letsencrypt:/letsencrypt
       - traefik_logs:/var/log/traefik
     networks:
-      traefik_net:
-      traefik_proxy:
+      traefik_private_net:
+      traefik_public_net:
         ipv4_address: 192.168.32.254
-      docker_socket_proxy_net:
-
-  crowdsec:
-    image: docker.io/crowdsecurity/crowdsec:v1.7.6
-    restart: unless-stopped
-    environment:
-      - COLLECTIONS=crowdsecurity/traefik crowdsecurity/appsec-virtual-patching crowdsecurity/appsec-generic-rules crowdsecurity/base-http-scenarios crowdsecurity/http-cve crowdsecurity/http-dos
-    volumes:
-      - crowdsec_config:/etc/crowdsec
-      - ./crowdsec/acquis.d:/etc/crowdsec/acquis.d:ro
-      - ./crowdsec/acquis.yaml:/etc/crowdsec/acquis.yaml:ro
-      - crowdsec_db:/var/lib/crowdsec/data
-      - traefik_logs:/var/log/traefik:ro
-    networks:
-      - traefik_net
-
-networks:
-  docker_socket_proxy_net:
-    internal: true
-  traefik_net:
-    internal: false
-  traefik_ingress:
-    internal: true
-  traefik_proxy:
-    name: traefik_proxy
-    internal: true
-    ipam:
-      config:
-        - subnet: 192.168.32.0/20
+      docker_socket_proxy_public_net:
+      crowdsec_public_net:
+    labels:
+      - 'socket-proxy.allow.get=/v1\..{1,2}/(version|containers/.*|events.*)'
+      - 'socket-proxy.allow.head=/_ping'
 
 volumes:
   letsencrypt:
   traefik_logs:
-  crowdsec_config:
-  crowdsec_db:
+
+networks:
+  traefik_private_net:
+    internal: false
+  traefik_public_net:
+    name: traefik_public_net
+    internal: true
+    ipam:
+      config:
+        - subnet: 192.168.32.0/24
