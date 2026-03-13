@@ -8,29 +8,11 @@ remote_write:
     send_interval: 10s
 
 scrape_configs:
-  - job_name: 'vpn_traefik'
-    static_configs:
-      - targets: ['traefik:8082']
-        labels:
-          service_name: 'traefik'
-
-  - job_name: 'vpn_headscale'
-    static_configs:
-      - targets: ['headscale:9090']
-        labels:
-          service_name: 'headscale'
-
   - job_name: 'vpn_crowdsec'
     static_configs:
       - targets: ['crowdsec:6060']
         labels:
           service_name: 'crowdsec'
-
-  - job_name: 'vpn_prometheus_agent'
-    static_configs:
-      - targets: ['localhost:9090']
-        labels:
-          service_name: 'prometheus_agent'
 
   - job_name: 'vpn_crowdsec_firewall_bouncer'
     static_configs:
@@ -39,3 +21,15 @@ scrape_configs:
       - targets: ['host.docker.internal:6061']
         labels:
           service_name: 'crowdsec_firewall_bouncer'
+
+  - job_name: 'vpn_headscale'
+    static_configs:
+      - targets: ['headscale:9090']
+        labels:
+          service_name: 'headscale'
+
+  - job_name: 'vpn_traefik'
+    static_configs:
+      - targets: ['traefik:8082']
+        labels:
+          service_name: 'traefik'
