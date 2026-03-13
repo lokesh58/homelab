@@ -16,6 +16,7 @@ services:
       DB_PASSWORD: ${IMMICH_DB_PASSWORD}
       REDIS_HOSTNAME: immich_redis
       REDIS_PASSWORD: ${IMMICH_REDIS_PASS}
+      IMMICH_TELEMETRY_INCLUDE: all
     volumes:
       - ${IMMICH_STORAGE_LOCATION}:/data
       - /etc/localtime:/etc/localtime:ro
