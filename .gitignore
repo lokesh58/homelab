@@ -1,5 +1,4 @@
 .env
-server/services/monitoring/prometheus.yaml
 vpn/services/headscale/headplane/config.yaml
 vpn/services/headscale/headscale/config.yaml
 vpn/services/monitoring/prometheus-agent.yaml
