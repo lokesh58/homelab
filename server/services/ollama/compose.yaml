@@ -1,12 +1,12 @@
 services:
   ollama:
-    image: docker.io/ollama/ollama:0.15.6
+    image: docker.io/ollama/ollama:0.17.7
     restart: unless-stopped
     volumes:
       - ollama_data:/root/.ollama
     networks:
-      - ollama_net
-      - ollama_ingress
+      - ollama_private_net
+      - ollama_public_net
     deploy:
       resources:
         reservations:
@@ -19,7 +19,7 @@ volumes:
   ollama_data:
 
 networks:
-  ollama_net:
+  ollama_private_net:
     internal: false
-  ollama_ingress:
+  ollama_public_net:
     internal: true
