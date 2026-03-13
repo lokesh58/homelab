@@ -73,6 +73,11 @@ services:
   nextcloud_redis:
     image: docker.io/valkey/valkey:9.0.3-alpine
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    user: "${PUID}:${PGID}"
     healthcheck:
       test:
         - CMD-SHELL

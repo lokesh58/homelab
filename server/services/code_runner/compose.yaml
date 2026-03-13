@@ -2,16 +2,16 @@ services:
   code_runner:
     image: docker.io/huakesh/code-runner:0.1
     restart: unless-stopped
-    environment:
-      API_TOKEN: ${CODERUNNER_API_TOKEN}
     security_opt:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    user: "${PUID}:${PGID}"
+    environment:
+      API_TOKEN: ${CODERUNNER_API_TOKEN}
     networks:
-      - code_runner_net
-      - code_runner_ingress
-      - traefik_proxy
+      - code_runner_public_net
+      - traefik_public_net
     labels:
       - traefik.enable=true
       - traefik.http.routers.code_runner.entrypoints=websecure
@@ -27,7 +27,5 @@ services:
           memory: 256M
 
 networks:
-  code_runner_net:
-    internal: true
-  code_runner_ingress:
+  code_runner_public_net:
     internal: true

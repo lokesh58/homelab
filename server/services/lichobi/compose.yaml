@@ -2,6 +2,11 @@ services:
   lichobi:
     image: docker.io/huakesh/lichobi:0.1
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    user: "${PUID}:${PGID}"
     environment:
       AI_PROVIDER: gemini
       AI_API_KEY: ${LICHOBI_GEMINI_API_KEY}
@@ -11,9 +16,9 @@ services:
       DISCORD_BOT_TOKEN: ${LICHOBI_DISCORD_BOT_TOKEN}
       LOG_LEVEL: info
     networks:
-      - lichobi_net
-      - code_runner_ingress
+      - lichobi_private_net
+      - code_runner_public_net
 
 networks:
-  lichobi_net:
+  lichobi_private_net:
     internal: false

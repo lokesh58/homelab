@@ -15,6 +15,11 @@ services:
   penpot_frontend:
     image: docker.io/penpotapp/frontend:2.13.3
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    user: "${PUID}:${PGID}"
     depends_on:
       - penpot_backend
       - penpot_exporter
@@ -34,6 +39,11 @@ services:
   penpot_backend:
     image: docker.io/penpotapp/backend:2.13.3
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    user: "${PUID}:${PGID}"
     depends_on:
       penpot_postgres:
         condition: service_healthy
@@ -72,6 +82,11 @@ services:
   penpot_exporter:
     image: docker.io/penpotapp/exporter:2.13.3
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    user: "${PUID}:${PGID}"
     depends_on:
       penpot_valkey:
         condition: service_healthy
@@ -109,6 +124,11 @@ services:
   penpot_valkey:
     image: docker.io/valkey/valkey:9.0.3-alpine
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    user: "${PUID}:${PGID}"
     environment:
       VALKEY_EXTRA_FLAGS: --requirepass ${PENPOT_REDIS_PASS} --maxmemory 128mb --maxmemory-policy volatile-lfu
     networks:

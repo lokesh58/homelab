@@ -2,6 +2,11 @@ services:
   open_webui:
     image: ghcr.io/open-webui/open-webui:v0.8.10-cuda
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    user: "${PUID}:${PGID}"
     depends_on:
       open_webui_db:
         condition: service_healthy
@@ -122,6 +127,11 @@ services:
   open_webui_valkey:
     image: docker.io/valkey/valkey:9.0.3-alpine
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    user: "${PUID}:${PGID}"
     healthcheck:
       interval: 30s
       retries: 5
