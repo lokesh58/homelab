@@ -25,7 +25,7 @@ services:
       MAIL_FROM_ADDRESS: nextcloud
       MAIL_DOMAIN: ${DOMAIN}
       # Nextcloud
-      NEXTCLOUD_TRUSTED_DOMAINS: nextcloud.${DOMAIN}
+      NEXTCLOUD_TRUSTED_DOMAINS: nextcloud.server.${DOMAIN}
       # Proxy settings
       APACHE_DISABLE_REWRITE_IP: 1
       TRUSTED_PROXIES: 192.168.32.254
@@ -37,12 +37,12 @@ services:
       - nextcloud_app:/var/www/html
       - ${NEXTCLOUD_STORAGE_LOCATION}:/var/www/html/data
     networks:
-      - nextcloud_net
-      - traefik_proxy
+      - nextcloud_private_net
+      - traefik_public_net
     labels:
       - traefik.enable=true
       - traefik.http.routers.nextcloud.entrypoints=websecure
-      - traefik.http.routers.nextcloud.rule=Host(`nextcloud.${DOMAIN}`)
+      - traefik.http.routers.nextcloud.rule=Host(`nextcloud.server.${DOMAIN}`)
       - traefik.http.services.nextcloud.loadbalancer.server.port=80
       # CalDAV/CardDAV redirects
       - traefik.http.middlewares.nextcloud-caldav.redirectregex.permanent=true
@@ -51,7 +51,7 @@ services:
       - traefik.http.routers.nextcloud.middlewares=nextcloud-caldav
 
   nextcloud_postgres:
-    image: docker.io/library/postgres:16-alpine
+    image: docker.io/library/postgres:18.3-alpine3.23
     restart: unless-stopped
     healthcheck:
       test:
@@ -68,10 +68,10 @@ services:
     volumes:
       - nextcloud_db_data:/var/lib/postgresql/data
     networks:
-      - nextcloud_net
+      - nextcloud_private_net
 
   nextcloud_redis:
-    image: docker.io/valkey/valkey:8.1
+    image: docker.io/valkey/valkey:9.0.3-alpine
     restart: unless-stopped
     healthcheck:
       test:
@@ -84,12 +84,12 @@ services:
     environment:
       VALKEY_EXTRA_FLAGS: --requirepass ${NEXTCLOUD_REDIS_PASSWORD}
     networks:
-      - nextcloud_net
+      - nextcloud_private_net
 
 volumes:
   nextcloud_app:
   nextcloud_db_data:
 
 networks:
-  nextcloud_net:
+  nextcloud_private_net:
     internal: false
