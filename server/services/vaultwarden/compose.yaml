@@ -43,7 +43,7 @@ services:
       - traefik.http.services.vaultwarden.loadbalancer.server.port=80
 
   vaultwarden_db:
-    image: docker.io/library/postgres:16-alpine
+    image: docker.io/library/postgres:18.3-alpine3.23
     restart: unless-stopped
     healthcheck:
       interval: 30s

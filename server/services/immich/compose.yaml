@@ -20,8 +20,8 @@ services:
       - ${IMMICH_STORAGE_LOCATION}:/data
       - /etc/localtime:/etc/localtime:ro
     networks:
-      - immich_net
-      - traefik_proxy
+      - immich_private_net
+      - traefik_public_net
     labels:
       - traefik.enable=true
       - traefik.http.routers.immich.entrypoints=websecure
@@ -38,7 +38,7 @@ services:
     volumes:
       - immich_model_cache:/cache
     networks:
-      - immich_net
+      - immich_private_net
     deploy:
       resources:
         reservations:
@@ -49,14 +49,14 @@ services:
                 - gpu
 
   immich_redis:
-    image: docker.io/valkey/valkey:9.0
+    image: docker.io/valkey/valkey:9.0.3-alpine
     restart: unless-stopped
     healthcheck:
       test: redis-cli ping || exit 1
     environment:
       VALKEY_EXTRA_FLAGS: --requirepass ${IMMICH_REDIS_PASS}
     networks:
-      - immich_net
+      - immich_private_net
 
   immich_database:
     image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0
@@ -74,12 +74,12 @@ services:
     volumes:
       - immich_db_data:/var/lib/postgresql/data
     networks:
-      - immich_net
+      - immich_private_net
 
 volumes:
   immich_model_cache:
   immich_db_data:
 
 networks:
-  immich_net:
+  immich_private_net:
     internal: false

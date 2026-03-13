@@ -29,10 +29,10 @@ services:
       # Proxy settings
       APACHE_DISABLE_REWRITE_IP: 1
       TRUSTED_PROXIES: 192.168.32.254
-      # File Limits (Aligns with Traefik/AppSec body limit)
-      PHP_UPLOAD_LIMIT: ${MAX_BODY_SIZE_MB}
+      # File Limits
+      PHP_UPLOAD_LIMIT: 512M
       PHP_MEMORY_LIMIT: 512M
-      APACHE_BODY_LIMIT: ${MAX_BODY_SIZE_BYTES}
+      APACHE_BODY_LIMIT: 1073741824
     volumes:
       - nextcloud_app:/var/www/html
       - ${NEXTCLOUD_STORAGE_LOCATION}:/var/www/html/data

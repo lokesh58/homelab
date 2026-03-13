@@ -85,7 +85,7 @@ services:
           - penpot-exporter # required by this name by frontend
 
   penpot_postgres:
-    image: docker.io/library/postgres:15
+    image: docker.io/library/postgres:18.3-alpine3.23
     restart: unless-stopped
     stop_signal: SIGINT
     environment:
@@ -107,7 +107,7 @@ services:
       start_period: 2s
 
   penpot_valkey:
-    image: docker.io/valkey/valkey:8.1
+    image: docker.io/valkey/valkey:9.0.3-alpine
     restart: unless-stopped
     environment:
       VALKEY_EXTRA_FLAGS: --requirepass ${PENPOT_REDIS_PASS} --maxmemory 128mb --maxmemory-policy volatile-lfu

@@ -7,6 +7,12 @@ global:
     instance_group: 'server'
 
 scrape_configs:
+  - job_name: 'server_crowdsec'
+    static_configs:
+      - targets: ['crowdsec:6060']
+        labels:
+          service_name: 'crowdsec'
+
   - job_name: 'server_traefik'
     static_configs:
       - targets: ['traefik:8082']
