@@ -2,20 +2,18 @@ x-penpot_flags: &penpot_flags
   PENPOT_FLAGS: enable-smtp enable-login-with-oidc enable-oidc-registration disable-login-with-password disable-registration disable-email-verification
 
 x-penpot_public_uri: &penpot_public_uri
-  PENPOT_PUBLIC_URI: https://penpot.${DOMAIN}
+  PENPOT_PUBLIC_URI: https://penpot.server.${DOMAIN}
 
 x-penpot_http_body_size: &penpot_http_body_size
-  # Max body size (30MiB); Used for plain requests, should never be greater than multi-part size
-  PENPOT_HTTP_SERVER_MAX_BODY_SIZE: 31457280
-  # Max multipart body size
-  PENPOT_HTTP_SERVER_MAX_MULTIPART_BODY_SIZE: ${MAX_BODY_SIZE_BYTES}
+  # Max body size
+  PENPOT_HTTP_SERVER_MAX_BODY_SIZE: 367001600
 
 x-penpot_secret_key: &penpot_secret_key
   PENPOT_SECRET_KEY: ${PENPOT_SECRET_KEY}
 
 services:
   penpot_frontend:
-    image: docker.io/penpotapp/frontend:2.12.1
+    image: docker.io/penpotapp/frontend:2.13.3
     restart: unless-stopped
     depends_on:
       - penpot_backend
@@ -25,16 +23,16 @@ services:
     volumes:
       - penpot_assets:/opt/data/assets
     networks:
-      - penpot_net
-      - traefik_proxy
+      - penpot_private_net
+      - traefik_public_net
     labels:
       - traefik.enable=true
       - traefik.http.routers.penpot.entrypoints=websecure
-      - traefik.http.routers.penpot.rule=Host(`penpot.${DOMAIN}`)
+      - traefik.http.routers.penpot.rule=Host(`penpot.server.${DOMAIN}`)
       - traefik.http.services.penpot.loadbalancer.server.port=8080
 
   penpot_backend:
-    image: docker.io/penpotapp/backend:2.12.1
+    image: docker.io/penpotapp/backend:2.13.3
     restart: unless-stopped
     depends_on:
       penpot_postgres:
@@ -47,10 +45,11 @@ services:
       PENPOT_DATABASE_USERNAME: ${PENPOT_PG_USER}
       PENPOT_DATABASE_PASSWORD: ${PENPOT_PG_PASS}
       PENPOT_REDIS_URI: redis://:${PENPOT_REDIS_PASS}@penpot_valkey/0
-      PENPOT_ASSETS_STORAGE_BACKEND: assets-fs
-      PENPOT_STORAGE_ASSETS_FS_DIRECTORY: /opt/data/assets
+      PENPOT_OBJECTS_STORAGE_BACKEND: fs
+      PENPOT_OBJECTS_STORAGE_FS_DIRECTORY: /opt/data/assets
+      PENPOT_TELEMETRY_ENABLED: false
       PENPOT_SMTP_DEFAULT_FROM: Penpot <penpot@${DOMAIN}>
-      PENPOT_SMTP_DEFAULT_REPLY_TO: ${ORG_NAME} Support <support@${DOMAIN}>
+      PENPOT_SMTP_DEFAULT_REPLY_TO: Homelab Support <support@${DOMAIN}>
       PENPOT_SMTP_HOST: ${SMTP_HOST}
       PENPOT_SMTP_PORT: ${SMTP_PORT}
       PENPOT_SMTP_USERNAME: ${SMTP_USERNAME}
@@ -59,19 +58,19 @@ services:
       PENPOT_SMTP_SSL: ${SMTP_USE_SSL}
       PENPOT_OIDC_CLIENT_ID: ${PENPOT_OIDC_ID}
       PENPOT_OIDC_CLIENT_SECRET: ${PENPOT_OIDC_SECRET}
-      PENPOT_OIDC_BASE_URI: https://auth.${DOMAIN}/application/o/penpot/
-      PENPOT_OIDC_AUTH_URI: https://auth.${DOMAIN}/application/o/authorize/
-      PENPOT_OIDC_TOKEN_URI: https://auth.${DOMAIN}/application/o/token/
-      PENPOT_OIDC_USER_URI: https://auth.${DOMAIN}/application/o/userinfo/
+      PENPOT_OIDC_BASE_URI: https://auth.server.${DOMAIN}/application/o/penpot/
+      PENPOT_OIDC_AUTH_URI: https://auth.server.${DOMAIN}/application/o/authorize/
+      PENPOT_OIDC_TOKEN_URI: https://auth.server.${DOMAIN}/application/o/token/
+      PENPOT_OIDC_USER_URI: https://auth.server.${DOMAIN}/application/o/userinfo/
     volumes:
       - penpot_assets:/opt/data/assets
     networks:
-      penpot_net:
+      penpot_private_net:
         aliases:
           - penpot-backend # required by this name by frontend
 
   penpot_exporter:
-    image: docker.io/penpotapp/exporter:2.12.1
+    image: docker.io/penpotapp/exporter:2.13.3
     restart: unless-stopped
     depends_on:
       penpot_valkey:
@@ -81,7 +80,7 @@ services:
       PENPOT_PUBLIC_URI: http://penpot_frontend:8080
       PENPOT_REDIS_URI: redis://:${PENPOT_REDIS_PASS}@penpot_valkey/0
     networks:
-      penpot_net:
+      penpot_private_net:
         aliases:
           - penpot-exporter # required by this name by frontend
 
@@ -97,7 +96,7 @@ services:
     volumes:
       - penpot_db_data:/var/lib/postgresql/data
     networks:
-      - penpot_net
+      - penpot_private_net
     healthcheck:
       test:
         - CMD-SHELL
@@ -113,7 +112,7 @@ services:
     environment:
       VALKEY_EXTRA_FLAGS: --requirepass ${PENPOT_REDIS_PASS} --maxmemory 128mb --maxmemory-policy volatile-lfu
     networks:
-      - penpot_net
+      - penpot_private_net
     healthcheck:
       test:
         - CMD-SHELL
@@ -128,5 +127,5 @@ volumes:
   penpot_db_data:
 
 networks:
-  penpot_net:
+  penpot_private_net:
     internal: false
