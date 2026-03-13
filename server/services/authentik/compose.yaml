@@ -22,6 +22,11 @@ services:
   authentik_server:
     image: ghcr.io/goauthentik/server:2026.2.1
     restart: unless-stopped
+    user: "${PUID}:${PGID}"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       authentik_postgresql:
         condition: service_healthy
@@ -43,7 +48,11 @@ services:
   authentik_worker:
     image: ghcr.io/goauthentik/server:2026.2.1
     restart: unless-stopped
-    user: root
+    user: "${PUID}:${PGID}"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       authentik_postgresql:
         condition: service_healthy
